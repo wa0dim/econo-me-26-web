@@ -102,7 +102,7 @@
         // Rueckgabe: { steps: [...], note: "..." }
         if (p.ios) {
           // Brave am iPhone: Menue (⋯) unten in der Leiste, Installieren ueber "Teilen"
-          if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Im Brave-Browser liegt es unten etwa in der Mitte, nicht bei den drei Punkten.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "", warn: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "", warn: "Falls die Option fehlt, öffne diese Seite in Safari." };
           // iPad: Teilen-Symbol sitzt oben rechts in der Safari-Leiste, auch ab iOS 26
           if (p.ipad && p.browser === "safari") return { steps: ["Tippe oben rechts in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "" };
           if (p.liquidGlass) {
@@ -187,6 +187,7 @@
             var last = stepsEl.lastChild;
             var w = document.createElement("span");
             w.className = "install-warn";
+            w.style.cssText = "color:#b3453f;font-style:italic"; // inline, damit eine zwischengespeicherte style.css nicht stoert
             w.textContent = info.warn;
             last.appendChild(document.createElement("br"));
             last.appendChild(w);
