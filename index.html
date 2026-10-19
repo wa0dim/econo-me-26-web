@@ -56,7 +56,7 @@
     </div>
     <script>
       // ---- Installations-Erkennung und Anleitung (Web-App / PWA) ----
-      function rlDetectPlatform(ua, platform, maxTouch) {
+      function rlDetectPlatform(ua, platform, maxTouch, hasStandaloneProp) {
         var isIPadOS = platform === "MacIntel" && maxTouch > 1;
         var ipad = /iPad/i.test(ua) || isIPadOS;
         var ios = /iPhone|iPad|iPod/i.test(ua) || isIPadOS;
@@ -69,6 +69,9 @@
         else if (/OPR|Opera|OPiOS/i.test(ua)) browser = "opera";
         else if (/CriOS|Chrome/i.test(ua)) browser = "chrome";
         else if (/Safari/i.test(ua)) browser = "safari";
+        // Brave (und andere Browser) am iPhone melden sich im User-Agent wie Safari. Echtes Safari kennt aber
+        // navigator.standalone, Browser mit eigener WebView nicht.
+        if (ios && browser === "safari" && hasStandaloneProp === false) browser = "ios-webview";
         var iosMajor = ios ? rlIosMajor(ua) : 0;
         // Liquid Glass (neues Design mit verschobenen Menues) gibt es ab iOS/iPadOS 26
         return { ios: ios, ipad: ipad, android: android, mobile: mobile, browser: browser, iosMajor: iosMajor, liquidGlass: iosMajor >= 26 };
@@ -99,7 +102,7 @@
         // Rueckgabe: { steps: [...], note: "..." }
         if (p.ios) {
           // Brave am iPhone: Menue (⋯) unten in der Leiste, Installieren ueber "Teilen"
-          if (p.browser === "brave") return { steps: ["Tippe unten in der Leiste auf die drei Punkte (⋯).", "Tippe auf „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Im Brave-Browser liegt es unten etwa in der Mitte, nicht bei den drei Punkten.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
           // iPad: Teilen-Symbol sitzt oben rechts in der Safari-Leiste, auch ab iOS 26
           if (p.ipad && p.browser === "safari") return { steps: ["Tippe oben rechts in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "" };
           if (p.liquidGlass) {
@@ -124,7 +127,7 @@
       }
 
       (function () {
-        var platform = rlDetectPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints || 0);
+        var platform = rlDetectPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints || 0, typeof navigator.standalone !== "undefined");
         var standalone = rlIsStandalone();
         window.rentenLife = { standalone: standalone, platform: platform };
 
