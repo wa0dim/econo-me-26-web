@@ -247,7 +247,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "1.5",
+        productVersion: "1.6.2",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
@@ -268,6 +268,22 @@
 
 
 
+      // Ladebildschirm weich ausblenden (wird vom Spiel per rlGameReady ausgeloest)
+      var rlLoadingHidden = false;
+      function rlHideLoading() {
+        if (rlLoadingHidden) return;
+        rlLoadingHidden = true;
+        loadingContainer.style.transition = "opacity 0.35s ease";
+        loadingContainer.style.opacity = "0";
+        loadingContainer.style.pointerEvents = "none";
+        setTimeout(function () { loadingContainer.style.display = "none"; }, 400);
+      }
+      window.rlGameReady = function () {
+        window.rlGameReadyFired = true;
+        // zwei Browser-Frames abwarten, damit das erste Bild wirklich auf dem Schirm ist
+        requestAnimationFrame(function () { requestAnimationFrame(rlHideLoading); });
+      };
+
       // Das Spiel wird erst geladen, wenn rlStartGame() aufgerufen wird
       // (installierte App oder bestaetigte Browser-Warnung, siehe oben).
       var rlStarted = false;
@@ -284,9 +300,14 @@
             progressBarFull.style.width = pct + "%";
             loadingPercent.textContent = "Wird geladen … " + pct + " %";
           } else {
-            loadingContainer.style.display = "none";
+            // Fertig geladen: Ladebildschirm bleibt, bis das Spiel das erste Bild meldet
+            // (rlGameReady). Sonst gaebe es einen kurzen schwarzen Blitz.
+            progressBarFull.style.width = "100%";
+            loadingPercent.textContent = "Starte …";
           }
         }).then((unityInstance) => {
+          // Falls das Spiel nie "bereit" meldet (oder das erste Bild sehr lange braucht), blendet der Timer den Ladebildschirm nach 12 s trotzdem aus
+          setTimeout(rlHideLoading, 12000);
         }).catch((message) => {
           alert(message);
         });
