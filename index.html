@@ -58,6 +58,7 @@
       // ---- Installations-Erkennung und Anleitung (Web-App / PWA) ----
       function rlDetectPlatform(ua, platform, maxTouch) {
         var isIPadOS = platform === "MacIntel" && maxTouch > 1;
+        var ipad = /iPad/i.test(ua) || isIPadOS;
         var ios = /iPhone|iPad|iPod/i.test(ua) || isIPadOS;
         var android = /Android/i.test(ua);
         var mobile = ios || android || /Mobile/i.test(ua);
@@ -70,7 +71,7 @@
         else if (/Safari/i.test(ua)) browser = "safari";
         var iosMajor = ios ? rlIosMajor(ua) : 0;
         // Liquid Glass (neues Design mit verschobenen Menues) gibt es ab iOS/iPadOS 26
-        return { ios: ios, android: android, mobile: mobile, browser: browser, iosMajor: iosMajor, liquidGlass: iosMajor >= 26 };
+        return { ios: ios, ipad: ipad, android: android, mobile: mobile, browser: browser, iosMajor: iosMajor, liquidGlass: iosMajor >= 26 };
       }
 
       function rlIosMajor(ua) {
@@ -99,6 +100,8 @@
         if (p.ios) {
           // Brave am iPhone: Menue (⋯) unten in der Leiste, Installieren ueber "Teilen"
           if (p.browser === "brave") return { steps: ["Tippe unten in der Leiste auf die drei Punkte (⋯).", "Tippe auf „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          // iPad: Teilen-Symbol sitzt oben rechts in der Safari-Leiste, auch ab iOS 26
+          if (p.ipad && p.browser === "safari") return { steps: ["Tippe oben rechts in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "" };
           if (p.liquidGlass) {
             // iOS 26 (Liquid Glass): Teilen steckt im Menue (⋯) der Safari-Leiste, "Zum Home-Bildschirm" ist weiter unten
             if (p.browser === "safari") return { steps: ["Tippe unten rechts in der Leiste auf das Menü (⋯).", "Tippe auf „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "" };
@@ -109,6 +112,7 @@
         }
         if (p.android) {
           if (p.browser === "brave") return { steps: ["Tippe auf die drei Punkte (⋯) in der Leiste (unten oder oben rechts, je nach Einstellung).", "Wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.", "Bestätige mit „Installieren“ bzw. „Hinzufügen“."], note: "" };
+          if (p.browser === "edge") return { steps: ["Tippe unten in der Leiste auf das Menü (drei Punkte).", "Wähle „Zum Telefon hinzufügen“ bzw. „App installieren“ (je nach Version auch „Zum Startbildschirm hinzufügen“).", "Bestätige mit „Installieren“ bzw. „Hinzufügen“."], note: "" };
           if (p.browser === "samsung") return { steps: ["Tippe unten auf das Menü (drei Striche).", "Wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.", "Bestätige mit „Installieren“."], note: "" };
           if (p.browser === "firefox") return { steps: ["Tippe oben rechts auf das Menü (drei Punkte).", "Wähle „Installieren“.", "Bestätige mit „Hinzufügen“."], note: "" };
           return { steps: ["Tippe oben rechts auf das Menü (drei Punkte).", "Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.", "Bestätige mit „Installieren“."], note: "" };
