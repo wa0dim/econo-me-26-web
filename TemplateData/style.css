@@ -21,3 +21,14 @@ body { padding: 0; margin: 0; background: #ecece9; overflow: hidden; overscroll-
 #install-button { background: #26303b; color: #fff }
 #install-dismiss { background: #ecece9; color: #26303b }
 #install-card button[hidden] { display: none }
+#browser-warning { box-sizing: border-box; width: 100%; max-width: 420px; max-height: 90%; overflow-y: auto; margin: 0 8px 8px; padding: 20px 20px 16px; border-radius: 16px; background: #fff; color: #26303b; box-shadow: 0 8px 30px rgba(0,0,0,0.25) }
+#browser-warning[hidden], #install-card[hidden] { display: none }
+#browser-warning h2 { margin: 0 0 8px; font-size: 20px; color: #9a3412 }
+#browser-warning p { margin: 0 0 8px; font-size: 15px; line-height: 1.4 }
+#browser-warning ul { margin: 0 0 12px; padding-left: 20px; font-size: 14px; line-height: 1.45 }
+#warning-check-label { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 4px; font-size: 14px; line-height: 1.4; cursor: pointer }
+#warning-check { flex: 0 0 22px; width: 22px; height: 22px; margin: 1px 0 0 }
+#browser-warning button { display: block; width: 100%; box-sizing: border-box; min-height: 48px; margin-top: 8px; border: 0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer }
+#warning-confirm { background: #9a3412; color: #fff }
+#warning-confirm:disabled { background: #d9d9d6; color: #8a8f95; cursor: not-allowed }
+#warning-back { background: #ecece9; color: #26303b }

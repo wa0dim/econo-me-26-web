@@ -19,7 +19,7 @@
     <div id="unity-container">
       <div id="unity-fullscreen-container">
         <canvas id="unity-canvas" width="540" height="960" tabindex="-1"></canvas>
-        <div id="unity-loading-container">
+        <div id="unity-loading-container" style="display:none">
           <div id="unity-loading-bar">
             <div id="loading-title">RentenLife</div>
             <div id="loading-subtitle">Dein Leben bis zur Rente</div>
@@ -37,7 +37,19 @@
           <ol id="install-steps"></ol>
           <p id="install-note"></p>
           <button id="install-button" type="button" hidden>Jetzt installieren</button>
-          <button id="install-dismiss" type="button">Erstmal im Browser spielen</button>
+          <button id="install-dismiss" type="button">Trotzdem im Browser spielen</button>
+        </div>
+        <div id="browser-warning" role="alertdialog" aria-modal="true" aria-labelledby="warning-title" hidden>
+          <h2 id="warning-title">Achtung: Nicht für den Browser gemacht</h2>
+          <p>RentenLife wurde dafür gemacht, als installierte Web-App gespielt zu werden, nicht als normale Webseite im Browser.</p>
+          <ul>
+            <li>Die Darstellung kann abweichen, weil Adressleiste und Menüs Platz wegnehmen.</li>
+            <li>Der Spielstand liegt im Speicher des Browsers und kann verloren gehen, wenn dieser aufgeräumt wird oder du im privaten Modus spielst.</li>
+            <li>Das Spiel läuft im Browser eventuell langsamer oder weniger stabil.</li>
+          </ul>
+          <label id="warning-check-label"><input type="checkbox" id="warning-check"> Ich habe verstanden, dass das Spiel nicht für den Browser-Betrieb gemacht ist, und spiele auf eigenes Risiko.</label>
+          <button id="warning-confirm" type="button" disabled>Im Browser spielen</button>
+          <button id="warning-back" type="button">Zurück zur Installation</button>
         </div>
       </div>
       <div id="unity-warning"> </div>
@@ -111,17 +123,33 @@
           setTimeout(fitWindow, 300);
         }
 
-        // Anleitung nur im Browser, nicht in der installierten App
-        if (standalone) return;
+        // Das Spiel wird erst geladen, wenn es erlaubt ist (installierte App oder bestaetigte Browser-Warnung)
+        window.rlAllowed = false;
+        window.rlStartGame = null;
+        function rlAllow() {
+          window.rlAllowed = true;
+          if (window.rlStartGame) window.rlStartGame();
+        }
+
+        // Installierte App: sofort starten, keine Anleitung
+        if (standalone) { rlAllow(); return; }
+
+        // Im Browser: in dieser Sitzung schon bestaetigt (z. B. nach Neuladen)?
+        var confirmedThisSession = false;
+        try { confirmedThisSession = sessionStorage.getItem("rl-browser-ok") === "1"; } catch (e) {}
+        if (confirmedThisSession) { rlAllow(); return; }
+
         var overlay = document.getElementById("install-overlay");
         var stepsEl = document.getElementById("install-steps");
         var noteEl = document.getElementById("install-note");
         var installBtn = document.getElementById("install-button");
         var dismissBtn = document.getElementById("install-dismiss");
 
-        var dismissed = false;
-        try { dismissed = localStorage.getItem("rl-install-dismissed") === "1"; } catch (e) {}
-        if (dismissed) return;
+        var installCard = document.getElementById("install-card");
+        var warningCard = document.getElementById("browser-warning");
+        var warningCheck = document.getElementById("warning-check");
+        var warningConfirm = document.getElementById("warning-confirm");
+        var warningBack = document.getElementById("warning-back");
 
         var info = rlInstallSteps(platform);
         info.steps.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; stepsEl.appendChild(li); });
@@ -138,12 +166,34 @@
         installBtn.addEventListener("click", function () {
           if (!deferredPrompt) return;
           deferredPrompt.prompt();
-          deferredPrompt.userChoice.finally(function () { deferredPrompt = null; installBtn.hidden = true; overlay.hidden = true; });
+          deferredPrompt.userChoice.finally(function () { deferredPrompt = null; installBtn.hidden = true; });
         });
-        window.addEventListener("appinstalled", function () { overlay.hidden = true; });
+        window.addEventListener("appinstalled", function () {
+          document.getElementById("install-title").textContent = "RentenLife ist installiert";
+          document.getElementById("install-intro").textContent = "Öffne das Spiel jetzt über das App-Symbol auf deinem Gerät.";
+          stepsEl.hidden = true;
+          noteEl.hidden = true;
+          installBtn.hidden = true;
+          dismissBtn.hidden = true;
+        });
+
+        // Browser-Weg: erst Warnung, Haken setzen, bestaetigen
         dismissBtn.addEventListener("click", function () {
+          installCard.hidden = true;
+          warningCard.hidden = false;
+        });
+        warningCheck.addEventListener("change", function () { warningConfirm.disabled = !warningCheck.checked; });
+        warningBack.addEventListener("click", function () {
+          warningCard.hidden = true;
+          installCard.hidden = false;
+          warningCheck.checked = false;
+          warningConfirm.disabled = true;
+        });
+        warningConfirm.addEventListener("click", function () {
+          if (!warningCheck.checked) return;
+          try { sessionStorage.setItem("rl-browser-ok", "1"); } catch (e) {}
           overlay.hidden = true;
-          try { localStorage.setItem("rl-install-dismissed", "1"); } catch (e) {}
+          rlAllow();
         });
         overlay.hidden = false;
       })();
@@ -202,7 +252,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "1.2",
+        productVersion: "1.3",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
@@ -223,6 +273,13 @@
 
 
 
+      // Das Spiel wird erst geladen, wenn rlStartGame() aufgerufen wird
+      // (installierte App oder bestaetigte Browser-Warnung, siehe oben).
+      var rlStarted = false;
+      function startGame() {
+      if (rlStarted) return;
+      rlStarted = true;
+      loadingContainer.style.display = "flex";
       var script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
@@ -240,6 +297,9 @@
         });
       };
       document.body.appendChild(script);
+      }
+      window.rlStartGame = startGame;
+      if (window.rlAllowed) startGame();
     </script>
   </body>
 </html>
