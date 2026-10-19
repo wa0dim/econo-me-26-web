@@ -36,6 +36,7 @@
           <p id="install-intro">Installiere das Spiel als App. Dann startet es im Vollbild und ohne Browserleiste.</p>
           <ol id="install-steps"></ol>
           <p id="install-note"></p>
+          <p id="install-warn" hidden></p>
           <button id="install-button" type="button" hidden>Jetzt installieren</button>
           <button id="install-dismiss" type="button">Trotzdem im Browser spielen</button>
         </div>
@@ -102,7 +103,7 @@
         // Rueckgabe: { steps: [...], note: "..." }
         if (p.ios) {
           // Brave am iPhone: Menue (⋯) unten in der Leiste, Installieren ueber "Teilen"
-          if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Im Brave-Browser liegt es unten etwa in der Mitte, nicht bei den drei Punkten.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Im Brave-Browser liegt es unten etwa in der Mitte, nicht bei den drei Punkten.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari.", warn: "Achtung: Im Brave-Browser am iPhone lässt sich eine Web-App scheinbar nicht installieren. Öffne diese Seite am besten in Safari." };
           // iPad: Teilen-Symbol sitzt oben rechts in der Safari-Leiste, auch ab iOS 26
           if (p.ipad && p.browser === "safari") return { steps: ["Tippe oben rechts in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "" };
           if (p.liquidGlass) {
@@ -167,6 +168,7 @@
         var overlay = document.getElementById("install-overlay");
         var stepsEl = document.getElementById("install-steps");
         var noteEl = document.getElementById("install-note");
+        var warnEl = document.getElementById("install-warn");
         var installBtn = document.getElementById("install-button");
         var dismissBtn = document.getElementById("install-dismiss");
 
@@ -182,6 +184,8 @@
           info.steps.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; stepsEl.appendChild(li); });
           noteEl.textContent = info.note;
           noteEl.hidden = !info.note;
+          warnEl.textContent = info.warn || "";
+          warnEl.hidden = !info.warn;
           stepsEl.hidden = info.steps.length === 0;
         }
         rlRenderSteps();
@@ -214,6 +218,7 @@
             document.getElementById("install-intro").textContent = "Öffne das Spiel jetzt über das App-Symbol auf deinem Gerät.";
             stepsEl.hidden = true;
             noteEl.hidden = true;
+            warnEl.hidden = true;
             installBtn.hidden = true;
             dismissBtn.hidden = true;
           } else {
