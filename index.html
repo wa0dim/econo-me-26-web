@@ -104,21 +104,22 @@
         window.rentenLife = { standalone: standalone, platform: platform };
 
         // Am Computer: installierte App im 9:16-Fenster oeffnen
-        if (standalone && !platform.mobile && window.resizeTo) {
-          var fitWindow = function () {
-            try {
-              var availH = screen.availHeight || screen.height;
-              var targetOuterH = Math.min(Math.round(availH * 0.92), 1100);
-              var chromeW = window.outerWidth - window.innerWidth;
-              var chromeH = window.outerHeight - window.innerHeight;
-              var innerH = targetOuterH - chromeH;
-              var targetOuterW = Math.round(innerH * 9 / 16) + chromeW;
-              window.resizeTo(targetOuterW, targetOuterH);
-              var left = Math.max(0, Math.round(((screen.availWidth || screen.width) - targetOuterW) / 2));
-              var top = Math.max(0, Math.round((availH - targetOuterH) / 2));
-              window.moveTo((screen.availLeft || 0) + left, (screen.availTop || 0) + top);
-            } catch (e) { /* Fenstergroesse nicht aenderbar, kein Problem */ }
-          };
+        var fitWindow = function () {
+          if (!window.resizeTo) return;
+          try {
+            var availH = screen.availHeight || screen.height;
+            var targetOuterH = Math.min(Math.round(availH * 0.92), 1100);
+            var chromeW = window.outerWidth - window.innerWidth;
+            var chromeH = window.outerHeight - window.innerHeight;
+            var innerH = targetOuterH - chromeH;
+            var targetOuterW = Math.round(innerH * 9 / 16) + chromeW;
+            window.resizeTo(targetOuterW, targetOuterH);
+            var left = Math.max(0, Math.round(((screen.availWidth || screen.width) - targetOuterW) / 2));
+            var top = Math.max(0, Math.round((availH - targetOuterH) / 2));
+            window.moveTo((screen.availLeft || 0) + left, (screen.availTop || 0) + top);
+          } catch (e) { /* Fenstergroesse nicht aenderbar, kein Problem */ }
+        };
+        if (standalone && !platform.mobile) {
           fitWindow();
           setTimeout(fitWindow, 300);
         }
@@ -164,14 +165,36 @@
           deferredPrompt.prompt();
           deferredPrompt.userChoice.finally(function () { deferredPrompt = null; installBtn.hidden = true; });
         });
-        window.addEventListener("appinstalled", function () {
-          document.getElementById("install-title").textContent = "RentenLife ist installiert";
-          document.getElementById("install-intro").textContent = "Öffne das Spiel jetzt über das App-Symbol auf deinem Gerät.";
-          stepsEl.hidden = true;
-          noteEl.hidden = true;
-          installBtn.hidden = true;
-          dismissBtn.hidden = true;
-        });
+        // Nach der Installation
+        var rlInstalledHandled = false;
+        function rlOnInstalled() {
+          if (rlInstalledHandled) return;
+          rlInstalledHandled = true;
+          if (platform.mobile) {
+            // Handy: Hinweis, die App ueber das Symbol zu oeffnen
+            document.getElementById("install-title").textContent = "RentenLife ist installiert";
+            document.getElementById("install-intro").textContent = "Öffne das Spiel jetzt über das App-Symbol auf deinem Gerät.";
+            stepsEl.hidden = true;
+            noteEl.hidden = true;
+            installBtn.hidden = true;
+            dismissBtn.hidden = true;
+          } else {
+            // Computer: Der Browser oeffnet die App direkt, also sofort starten (9:16-Fenster, ohne Warnung)
+            window.rentenLife.standalone = true;
+            overlay.hidden = true;
+            fitWindow();
+            setTimeout(fitWindow, 300);
+            rlAllow();
+          }
+        }
+        window.addEventListener("appinstalled", rlOnInstalled);
+        if (!platform.mobile) {
+          // Chrome/Edge am PC wandeln den Tab nach der Installation oft in ein App-Fenster um
+          var rlStandaloneQuery = window.matchMedia("(display-mode: standalone)");
+          var rlOnDisplayModeChange = function () { if (rlIsStandalone()) rlOnInstalled(); };
+          if (rlStandaloneQuery.addEventListener) rlStandaloneQuery.addEventListener("change", rlOnDisplayModeChange);
+          else if (rlStandaloneQuery.addListener) rlStandaloneQuery.addListener(rlOnDisplayModeChange);
+        }
 
         // Browser-Weg: erst Warnung, Haken setzen, bestaetigen
         dismissBtn.addEventListener("click", function () {
@@ -247,7 +270,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "1.6.2",
+        productVersion: "1.7",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
