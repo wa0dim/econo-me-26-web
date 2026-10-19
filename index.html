@@ -134,11 +134,7 @@
         // Installierte App: sofort starten, keine Anleitung
         if (standalone) { rlAllow(); return; }
 
-        // Im Browser: in dieser Sitzung schon bestaetigt (z. B. nach Neuladen)?
-        var confirmedThisSession = false;
-        try { confirmedThisSession = sessionStorage.getItem("rl-browser-ok") === "1"; } catch (e) {}
-        if (confirmedThisSession) { rlAllow(); return; }
-
+        // Im Browser: Anleitung und Warnung kommen bei jedem Laden der Seite (auch nach Neuladen) wieder.
         var overlay = document.getElementById("install-overlay");
         var stepsEl = document.getElementById("install-steps");
         var noteEl = document.getElementById("install-note");
@@ -191,7 +187,6 @@
         });
         warningConfirm.addEventListener("click", function () {
           if (!warningCheck.checked) return;
-          try { sessionStorage.setItem("rl-browser-ok", "1"); } catch (e) {}
           overlay.hidden = true;
           rlAllow();
         });
@@ -252,7 +247,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "1.3",
+        productVersion: "1.4",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
