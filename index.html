@@ -68,7 +68,20 @@
         else if (/OPR|Opera|OPiOS/i.test(ua)) browser = "opera";
         else if (/CriOS|Chrome/i.test(ua)) browser = "chrome";
         else if (/Safari/i.test(ua)) browser = "safari";
-        return { ios: ios, android: android, mobile: mobile, browser: browser };
+        var iosMajor = ios ? rlIosMajor(ua) : 0;
+        // Liquid Glass (neues Design mit verschobenen Menues) gibt es ab iOS/iPadOS 26
+        return { ios: ios, android: android, mobile: mobile, browser: browser, iosMajor: iosMajor, liquidGlass: iosMajor >= 26 };
+      }
+
+      function rlIosMajor(ua) {
+        // Der OS-Teil des User-Agents bleibt in Safari auf 18_x eingefroren, "Version/26" zeigt die echte Version.
+        // Daher beide Angaben auslesen und die hoehere nehmen.
+        var best = 0;
+        var m = /Version\/(\d+)/i.exec(ua);
+        if (m) best = Math.max(best, parseInt(m[1], 10));
+        m = /(?:iPhone )?OS (\d+)[_.]\d+/i.exec(ua);
+        if (m) best = Math.max(best, parseInt(m[1], 10));
+        return best;
       }
 
       function rlIsStandalone() {
@@ -84,6 +97,11 @@
       function rlInstallSteps(p) {
         // Rueckgabe: { steps: [...], note: "..." }
         if (p.ios) {
+          if (p.liquidGlass) {
+            // iOS 26 (Liquid Glass): Teilen steckt im Menue (⋯) der Safari-Leiste, "Zum Home-Bildschirm" ist weiter unten
+            if (p.browser === "safari") return { steps: ["Tippe unten rechts in der Leiste auf das Menü (⋯).", "Tippe auf „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "" };
+            return { steps: ["Tippe auf das Menü (⋯) oder das Teilen-Symbol des Browsers und wähle „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          }
           if (p.browser === "safari") return { steps: ["Tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“.", "Tippe oben rechts auf „Hinzufügen“."], note: "" };
           return { steps: ["Tippe auf das Teilen-Symbol oder das Menü (⋯) des Browsers.", "Wähle „Zum Home-Bildschirm“.", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
         }
