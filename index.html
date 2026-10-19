@@ -97,6 +97,8 @@
       function rlInstallSteps(p) {
         // Rueckgabe: { steps: [...], note: "..." }
         if (p.ios) {
+          // Brave am iPhone: Menue (⋯) unten in der Leiste, Installieren ueber "Teilen"
+          if (p.browser === "brave") return { steps: ["Tippe unten in der Leiste auf die drei Punkte (⋯).", "Tippe auf „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
           if (p.liquidGlass) {
             // iOS 26 (Liquid Glass): Teilen steckt im Menue (⋯) der Safari-Leiste, "Zum Home-Bildschirm" ist weiter unten
             if (p.browser === "safari") return { steps: ["Tippe unten rechts in der Leiste auf das Menü (⋯).", "Tippe auf „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "" };
@@ -106,6 +108,7 @@
           return { steps: ["Tippe auf das Teilen-Symbol oder das Menü (⋯) des Browsers.", "Wähle „Zum Home-Bildschirm“.", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
         }
         if (p.android) {
+          if (p.browser === "brave") return { steps: ["Tippe auf die drei Punkte (⋯) in der Leiste (unten oder oben rechts, je nach Einstellung).", "Wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.", "Bestätige mit „Installieren“ bzw. „Hinzufügen“."], note: "" };
           if (p.browser === "samsung") return { steps: ["Tippe unten auf das Menü (drei Striche).", "Wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.", "Bestätige mit „Installieren“."], note: "" };
           if (p.browser === "firefox") return { steps: ["Tippe oben rechts auf das Menü (drei Punkte).", "Wähle „Installieren“.", "Bestätige mit „Hinzufügen“."], note: "" };
           return { steps: ["Tippe oben rechts auf das Menü (drei Punkte).", "Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.", "Bestätige mit „Installieren“."], note: "" };
@@ -166,11 +169,21 @@
         var warningConfirm = document.getElementById("warning-confirm");
         var warningBack = document.getElementById("warning-back");
 
-        var info = rlInstallSteps(platform);
-        info.steps.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; stepsEl.appendChild(li); });
-        noteEl.textContent = info.note;
-        noteEl.hidden = !info.note;
-        stepsEl.hidden = info.steps.length === 0;
+        function rlRenderSteps() {
+          var info = rlInstallSteps(platform);
+          stepsEl.textContent = "";
+          info.steps.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; stepsEl.appendChild(li); });
+          noteEl.textContent = info.note;
+          noteEl.hidden = !info.note;
+          stepsEl.hidden = info.steps.length === 0;
+        }
+        rlRenderSteps();
+        // Brave meldet sich im User-Agent wie Safari/Chrome, erkennbar nur ueber navigator.brave
+        if (platform.mobile && navigator.brave && typeof navigator.brave.isBrave === "function") {
+          navigator.brave.isBrave().then(function (isBrave) {
+            if (isBrave) { platform.browser = "brave"; rlRenderSteps(); }
+          }).catch(function () { /* Erkennung nicht moeglich, Standardanleitung bleibt */ });
+        }
 
         var deferredPrompt = null;
         window.addEventListener("beforeinstallprompt", function (e) {
