@@ -1,4 +1,4 @@
-const cacheName = "DefaultCompany-RentenLife-1.4";
+const cacheName = "DefaultCompany-RentenLife-1.5";
 
 // Beim Registrieren wird bewusst nichts vorab geladen: Das Spiel soll erst
 // heruntergeladen werden, wenn der Spieler es starten darf (siehe index.html).
