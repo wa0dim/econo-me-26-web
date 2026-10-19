@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>RentenLife</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#1f3a5f">
+    <meta name="theme-color" content="#ecece9">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -30,8 +30,124 @@
           </div>
         </div>
       </div>
+      <div id="install-overlay" hidden>
+        <div id="install-card" role="dialog" aria-modal="true" aria-labelledby="install-title">
+          <h2 id="install-title">RentenLife installieren</h2>
+          <p id="install-intro">Installiere das Spiel als App. Dann startet es im Vollbild und ohne Browserleiste.</p>
+          <ol id="install-steps"></ol>
+          <p id="install-note"></p>
+          <button id="install-button" type="button" hidden>Jetzt installieren</button>
+          <button id="install-dismiss" type="button">Erstmal im Browser spielen</button>
+        </div>
+      </div>
       <div id="unity-warning"> </div>
     </div>
+    <script>
+      // ---- Installations-Erkennung und Anleitung (Web-App / PWA) ----
+      function rlDetectPlatform(ua, platform, maxTouch) {
+        var isIPadOS = platform === "MacIntel" && maxTouch > 1;
+        var ios = /iPhone|iPad|iPod/i.test(ua) || isIPadOS;
+        var android = /Android/i.test(ua);
+        var mobile = ios || android || /Mobile/i.test(ua);
+        var browser = "other";
+        if (/SamsungBrowser/i.test(ua)) browser = "samsung";
+        else if (/EdgA|EdgiOS|Edg\//i.test(ua)) browser = "edge";
+        else if (/FxiOS|Firefox/i.test(ua)) browser = "firefox";
+        else if (/OPR|Opera|OPiOS/i.test(ua)) browser = "opera";
+        else if (/CriOS|Chrome/i.test(ua)) browser = "chrome";
+        else if (/Safari/i.test(ua)) browser = "safari";
+        return { ios: ios, android: android, mobile: mobile, browser: browser };
+      }
+
+      function rlIsStandalone() {
+        var modes = ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"];
+        for (var i = 0; i < modes.length; i++) {
+          if (window.matchMedia("(display-mode: " + modes[i] + ")").matches) return true;
+        }
+        if (window.navigator.standalone === true) return true; // iOS
+        if (document.referrer && document.referrer.indexOf("android-app://") === 0) return true;
+        return false;
+      }
+
+      function rlInstallSteps(p) {
+        // Rueckgabe: { steps: [...], note: "..." }
+        if (p.ios) {
+          if (p.browser === "safari") return { steps: ["Tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“.", "Tippe oben rechts auf „Hinzufügen“."], note: "" };
+          return { steps: ["Tippe auf das Teilen-Symbol oder das Menü (⋯) des Browsers.", "Wähle „Zum Home-Bildschirm“.", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+        }
+        if (p.android) {
+          if (p.browser === "samsung") return { steps: ["Tippe unten auf das Menü (drei Striche).", "Wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.", "Bestätige mit „Installieren“."], note: "" };
+          if (p.browser === "firefox") return { steps: ["Tippe oben rechts auf das Menü (drei Punkte).", "Wähle „Installieren“.", "Bestätige mit „Hinzufügen“."], note: "" };
+          return { steps: ["Tippe oben rechts auf das Menü (drei Punkte).", "Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.", "Bestätige mit „Installieren“."], note: "" };
+        }
+        if (p.browser === "chrome" || p.browser === "edge") return { steps: ["Klicke in der Adressleiste rechts auf das Installieren-Symbol (Monitor mit Pfeil).", "Bestätige mit „Installieren“."], note: "Alternativ im Browsermenü „App installieren“ oder „Apps“ wählen." };
+        if (p.browser === "safari") return { steps: ["Klicke in der Symbolleiste auf das Teilen-Symbol.", "Wähle „Zum Dock hinzufügen“."], note: "Benötigt Safari 17 oder neuer." };
+        if (p.browser === "firefox") return { steps: [], note: "Firefox am Computer kann Web-Apps nicht installieren. Öffne diese Seite in Chrome oder Edge, wenn du das Spiel installieren möchtest." };
+        return { steps: ["Öffne das Browsermenü.", "Suche nach „App installieren“ oder „Zum Startbildschirm hinzufügen“."], note: "Nicht jeder Browser kann Web-Apps installieren. Chrome, Edge und Safari funktionieren am besten." };
+      }
+
+      (function () {
+        var platform = rlDetectPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints || 0);
+        var standalone = rlIsStandalone();
+        window.rentenLife = { standalone: standalone, platform: platform };
+
+        // Am Computer: installierte App im 9:16-Fenster oeffnen
+        if (standalone && !platform.mobile && window.resizeTo) {
+          var fitWindow = function () {
+            try {
+              var availH = screen.availHeight || screen.height;
+              var targetOuterH = Math.min(Math.round(availH * 0.92), 1100);
+              var chromeW = window.outerWidth - window.innerWidth;
+              var chromeH = window.outerHeight - window.innerHeight;
+              var innerH = targetOuterH - chromeH;
+              var targetOuterW = Math.round(innerH * 9 / 16) + chromeW;
+              window.resizeTo(targetOuterW, targetOuterH);
+              var left = Math.max(0, Math.round(((screen.availWidth || screen.width) - targetOuterW) / 2));
+              var top = Math.max(0, Math.round((availH - targetOuterH) / 2));
+              window.moveTo((screen.availLeft || 0) + left, (screen.availTop || 0) + top);
+            } catch (e) { /* Fenstergroesse nicht aenderbar, kein Problem */ }
+          };
+          fitWindow();
+          setTimeout(fitWindow, 300);
+        }
+
+        // Anleitung nur im Browser, nicht in der installierten App
+        if (standalone) return;
+        var overlay = document.getElementById("install-overlay");
+        var stepsEl = document.getElementById("install-steps");
+        var noteEl = document.getElementById("install-note");
+        var installBtn = document.getElementById("install-button");
+        var dismissBtn = document.getElementById("install-dismiss");
+
+        var dismissed = false;
+        try { dismissed = localStorage.getItem("rl-install-dismissed") === "1"; } catch (e) {}
+        if (dismissed) return;
+
+        var info = rlInstallSteps(platform);
+        info.steps.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; stepsEl.appendChild(li); });
+        noteEl.textContent = info.note;
+        noteEl.hidden = !info.note;
+        stepsEl.hidden = info.steps.length === 0;
+
+        var deferredPrompt = null;
+        window.addEventListener("beforeinstallprompt", function (e) {
+          e.preventDefault();
+          deferredPrompt = e;
+          installBtn.hidden = false;
+        });
+        installBtn.addEventListener("click", function () {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.finally(function () { deferredPrompt = null; installBtn.hidden = true; overlay.hidden = true; });
+        });
+        window.addEventListener("appinstalled", function () { overlay.hidden = true; });
+        dismissBtn.addEventListener("click", function () {
+          overlay.hidden = true;
+          try { localStorage.setItem("rl-install-dismissed", "1"); } catch (e) {}
+        });
+        overlay.hidden = false;
+      })();
+    </script>
     <script>
       window.addEventListener("load", function () {
         if ("serviceWorker" in navigator) {
@@ -86,7 +202,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "1.0",
+        productVersion: "1.2",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);

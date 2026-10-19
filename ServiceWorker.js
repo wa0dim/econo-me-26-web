@@ -1,4 +1,4 @@
-const cacheName = "DefaultCompany-RentenLife-1.0";
+const cacheName = "DefaultCompany-RentenLife-1.2";
 const contentToCache = [
     "Build/Web.loader.js",
     "Build/Web.framework.js.unityweb",
