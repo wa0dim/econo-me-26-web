@@ -102,16 +102,16 @@
         // Rueckgabe: { steps: [...], note: "..." }
         if (p.ios) {
           // Brave am iPhone: Menue (⋯) unten in der Leiste, Installieren ueber "Teilen"
-          if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Im Brave-Browser liegt es unten etwa in der Mitte, nicht bei den drei Punkten.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Im Brave-Browser liegt es unten etwa in der Mitte, nicht bei den drei Punkten.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
           // iPad: Teilen-Symbol sitzt oben rechts in der Safari-Leiste, auch ab iOS 26
           if (p.ipad && p.browser === "safari") return { steps: ["Tippe oben rechts in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "" };
           if (p.liquidGlass) {
             // iOS 26 (Liquid Glass): Teilen steckt im Menue (⋯) der Safari-Leiste, "Zum Home-Bildschirm" ist weiter unten
             if (p.browser === "safari") return { steps: ["Tippe unten rechts in der Leiste auf das Menü (⋯).", "Tippe auf „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "" };
-            return { steps: ["Tippe auf das Menü (⋯) oder das Teilen-Symbol des Browsers und wähle „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+            return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Falls es fehlt, tippe auf das Menü (⋯) und wähle „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
           }
           if (p.browser === "safari") return { steps: ["Tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“.", "Tippe oben rechts auf „Hinzufügen“."], note: "" };
-          return { steps: ["Tippe auf das Teilen-Symbol oder das Menü (⋯) des Browsers.", "Wähle „Zum Home-Bildschirm“.", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Falls es fehlt, tippe auf das Menü (⋯) und wähle „Teilen“.", "Wähle „Zum Home-Bildschirm“.", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
         }
         if (p.android) {
           if (p.browser === "brave") return { steps: ["Tippe auf die drei Punkte (⋯) in der Leiste (unten oder oben rechts, je nach Einstellung).", "Wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.", "Bestätige mit „Installieren“ bzw. „Hinzufügen“."], note: "" };
