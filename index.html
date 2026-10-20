@@ -28,6 +28,7 @@
             </div>
             <div id="loading-percent">Wird geladen &hellip;</div>
           </div>
+          <div id="loading-version" style="position:absolute;left:0;right:0;bottom:calc(8px + env(safe-area-inset-bottom));font-size:11px;color:#9aa0a6;text-align:center;pointer-events:none"></div>
         </div>
       </div>
       <div id="install-overlay" hidden>
@@ -56,26 +57,39 @@
     </div>
     <script>
       // ---- Installations-Erkennung und Anleitung (Web-App / PWA) ----
+      // Apps mit eigenem Browser (Google-App, Instagram, Facebook, TikTok, ...). Dort kann man nicht installieren.
+      var RL_IN_APP = /\bGSA\/|FBAN|FBAV|FB_IAB|FBIOS|Instagram|LinkedInApp|Snapchat|musical_ly|Bytedance|TikTok|Twitter|\bLine\/|MicroMessenger|Pinterest|Telegram|; wv\)/i;
+
       function rlDetectPlatform(ua, platform, maxTouch, hasStandaloneProp) {
         var isIPadOS = platform === "MacIntel" && maxTouch > 1;
         var ipad = /iPad/i.test(ua) || isIPadOS;
         var ios = /iPhone|iPad|iPod/i.test(ua) || isIPadOS;
-        var android = /Android/i.test(ua);
+        // Android im Modus "Desktop-Website" meldet sich als Linux-PC, hat aber Touch und einen ARM-Prozessor
+        var android = /Android/i.test(ua) || (/Linux/i.test(ua) && !/CrOS/i.test(ua) && maxTouch > 0 && /arm|aarch/i.test(platform || ""));
         var mobile = ios || android || /Mobile/i.test(ua);
         var browser = "other";
         if (/\bGSA\//i.test(ua)) browser = "google-app";
+        else if (RL_IN_APP.test(ua)) browser = "in-app";
         else if (/SamsungBrowser/i.test(ua)) browser = "samsung";
+        else if (/Opera Mini|OPiOS/i.test(ua)) browser = "opera-mini";
         else if (/EdgA|EdgiOS|Edg\//i.test(ua)) browser = "edge";
         else if (/FxiOS|Firefox/i.test(ua)) browser = "firefox";
-        else if (/OPR|Opera|OPiOS/i.test(ua)) browser = "opera";
+        else if (/OPR|OPT\/|OPX\/|Opera/i.test(ua)) browser = "opera";
+        else if (/YaBrowser|YaSearchBrowser/i.test(ua)) browser = "yandex";
+        else if (/UCBrowser|UCWEB/i.test(ua)) browser = "uc";
+        else if (/MiuiBrowser|XiaoMi/i.test(ua)) browser = "mi";
+        else if (/HuaweiBrowser|HONORBrowser/i.test(ua)) browser = "huawei";
+        else if (/DuckDuckGo|Ddg\//i.test(ua)) browser = "duckduckgo";
+        else if (/Vivaldi/i.test(ua)) browser = "vivaldi";
         else if (/CriOS|Chrome/i.test(ua)) browser = "chrome";
         else if (/Safari/i.test(ua)) browser = "safari";
         // Brave (und andere Browser) am iPhone melden sich im User-Agent wie Safari. Echtes Safari kennt aber
         // navigator.standalone, Browser mit eigener WebView nicht.
         if (ios && browser === "safari" && hasStandaloneProp === false) browser = "ios-webview";
         var iosMajor = ios ? rlIosMajor(ua) : 0;
+        var safariMatch = /Version\/(\d+)/i.exec(ua);
         // Liquid Glass (neues Design mit verschobenen Menues) gibt es ab iOS/iPadOS 26
-        return { ios: ios, ipad: ipad, android: android, mobile: mobile, browser: browser, iosMajor: iosMajor, liquidGlass: iosMajor >= 26 };
+        return { ios: ios, ipad: ipad, android: android, mobile: mobile, browser: browser, iosMajor: iosMajor, liquidGlass: iosMajor >= 26, safariMajor: safariMatch ? parseInt(safariMatch[1], 10) : 0 };
       }
 
       function rlIosMajor(ua) {
@@ -90,9 +104,10 @@
       }
 
       function rlIsStandalone() {
-        // Die Google-App ist ein Browser im Browser und meldet teils fullscreen/minimal-ui. Das ist keine installierte App.
-        if (/\bGSA\//i.test(navigator.userAgent)) return window.navigator.standalone === true;
-        var modes = ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"];
+        // Apps mit eigenem Browser melden teils fullscreen/minimal-ui. Das ist keine installierte App.
+        if (RL_IN_APP.test(navigator.userAgent)) return window.navigator.standalone === true;
+        // Nur "standalone" zaehlt (so steht es im Manifest). "fullscreen" wuerde sonst auch bei F11 im Browser greifen.
+        var modes = ["standalone", "window-controls-overlay"];
         for (var i = 0; i < modes.length; i++) {
           if (window.matchMedia("(display-mode: " + modes[i] + ")").matches) return true;
         }
@@ -102,31 +117,38 @@
       }
 
       function rlInstallSteps(p) {
-        // Rueckgabe: { steps: [...], note: "..." }
+        // Rueckgabe: { steps: [...], note: "...", warn: "..." (rot beim letzten Schritt) }
         if (p.browser === "google-app") return { steps: ["Tippe auf das Teilen-Symbol oder die drei Punkte der Google-App und wähle „In Safari öffnen“ (iPhone) bzw. „In Chrome öffnen“ (Android).", "Folge dort der Installationsanleitung."], note: "Die Google-App kann Web-Apps nicht installieren.", warn: "Öffne diese Seite in Safari bzw. Chrome." };
+        if (p.browser === "in-app") return { steps: ["Tippe auf das Menü dieser App (meist ⋯ oder ⋮, oben oder unten rechts).", "Wähle „Im Browser öffnen“, „In Safari öffnen“ bzw. „In Chrome öffnen“.", "Folge dort der Installationsanleitung."], note: "Du hast den Link in einer App geöffnet (z. B. Instagram, Facebook oder TikTok). Dort lässt sich RentenLife nicht installieren.", warn: p.ios ? "Öffne diese Seite in Safari." : "Öffne diese Seite in Chrome." };
+        if (p.browser === "opera-mini") return { steps: [], note: "Opera Mini kann Web-Apps nicht installieren. Öffne diese Seite in " + (p.ios ? "Safari" : "Chrome") + ", wenn du das Spiel installieren möchtest." };
         if (p.ios) {
-          // Brave am iPhone: Menue (⋯) unten in der Leiste, Installieren ueber "Teilen"
-          if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "", warn: "Falls die Option fehlt, öffne diese Seite in Safari." };
           // iPad: Teilen-Symbol sitzt oben rechts in der Safari-Leiste, auch ab iOS 26
           if (p.ipad && p.browser === "safari") return { steps: ["Tippe oben rechts in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "" };
-          if (p.liquidGlass) {
-            // iOS 26 (Liquid Glass): Teilen steckt im Menue (⋯) der Safari-Leiste, "Zum Home-Bildschirm" ist weiter unten
-            if (p.browser === "safari") return { steps: ["Tippe unten rechts in der Leiste auf das Menü (⋯).", "Tippe auf „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "" };
-            return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Falls es fehlt, tippe auf das Menü (⋯) und wähle „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          if (p.browser === "safari") {
+            // iOS 26 (Liquid Glass): In der Standard-Leiste ("Kompakt") steckt Teilen im Menue (⋯)
+            if (p.liquidGlass) return { steps: ["Tippe unten rechts in der Leiste auf das Menü (⋯) und dann auf „Teilen“. Siehst du unten direkt das Teilen-Symbol (Quadrat mit Pfeil nach oben), tippe darauf.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Lasse „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“."], note: "" };
+            return { steps: ["Tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“.", "Tippe oben rechts auf „Hinzufügen“."], note: "" };
           }
-          if (p.browser === "safari") return { steps: ["Tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle und wähle „Zum Home-Bildschirm“.", "Tippe oben rechts auf „Hinzufügen“."], note: "" };
-          return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Falls es fehlt, tippe auf das Menü (⋯) und wähle „Teilen“.", "Wähle „Zum Home-Bildschirm“.", "Tippe auf „Hinzufügen“."], note: "Falls die Option fehlt, öffne diese Seite in Safari." };
+          // Alle anderen Browser am iPhone/iPad (Chrome, Firefox, Edge, Opera, Brave, DuckDuckGo, ...) nutzen das Teilen-Menue von iOS
+          return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Falls es fehlt, tippe auf das Menü (⋯ oder ≡) und wähle „Teilen“.", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“ (falls angezeigt, „Als Web-App öffnen“ eingeschaltet lassen)."], note: "", warn: "Falls die Option fehlt, öffne diese Seite in Safari." };
         }
         if (p.android) {
-          if (p.browser === "brave") return { steps: ["Tippe auf die drei Punkte (⋯) in der Leiste (unten oder oben rechts, je nach Einstellung).", "Wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.", "Bestätige mit „Installieren“ bzw. „Hinzufügen“."], note: "" };
+          if (p.browser === "brave") return { steps: ["Tippe auf die drei Punkte (⋮) in der Leiste (unten oder oben rechts, je nach Einstellung).", "Wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.", "Bestätige mit „Installieren“ bzw. „Hinzufügen“."], note: "" };
           if (p.browser === "edge") return { steps: ["Tippe unten in der Leiste auf das Menü (drei Punkte).", "Wähle „Zum Telefon hinzufügen“ bzw. „App installieren“ (je nach Version auch „Zum Startbildschirm hinzufügen“).", "Bestätige mit „Installieren“ bzw. „Hinzufügen“."], note: "" };
           if (p.browser === "samsung") return { steps: ["Tippe oben rechts in der Adressleiste auf das Installieren-Symbol (Download-Symbol, Pfeil nach unten).", "Bestätige mit „Installieren“."], note: "" };
-          if (p.browser === "firefox") return { steps: ["Tippe oben rechts auf das Menü (drei Punkte).", "Wähle „Installieren“.", "Bestätige mit „Hinzufügen“."], note: "" };
-          return { steps: ["Tippe oben rechts auf das Menü (drei Punkte).", "Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.", "Bestätige mit „Installieren“."], note: "" };
+          if (p.browser === "firefox") return { steps: ["Tippe auf das Menü (drei Punkte), oben oder unten rechts je nach Leiste.", "Wähle „Installieren“ bzw. „Zum Startbildschirm hinzufügen“ (ggf. unter „Mehr“).", "Bestätige mit „Hinzufügen“."], note: "" };
+          if (p.browser === "chrome") return { steps: ["Tippe oben rechts auf das Menü (drei Punkte). Ist deine Adressleiste unten, findest du es unten rechts.", "Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.", "Bestätige mit „Installieren“."], note: "" };
+          // Opera, Yandex, UC, Xiaomi, Huawei, DuckDuckGo, Vivaldi und unbekannte Browser: Menue liegt je nach Browser anders
+          return { steps: ["Öffne das Menü des Browsers (meist drei Punkte ⋮ oder drei Striche ≡, oben oder unten rechts).", "Wähle „App installieren“, „Zum Startbildschirm hinzufügen“ oder einen ähnlichen Eintrag.", "Bestätige mit „Installieren“ bzw. „Hinzufügen“."], note: "", warn: "Falls die Option fehlt, öffne diese Seite in Chrome." };
         }
-        if (p.browser === "chrome" || p.browser === "edge") return { steps: ["Klicke in der Adressleiste rechts auf das Installieren-Symbol (Monitor mit Pfeil).", "Bestätige mit „Installieren“."], note: "Alternativ im Browsermenü „App installieren“ oder „Apps“ wählen." };
-        if (p.browser === "safari") return { steps: ["Klicke in der Symbolleiste auf das Teilen-Symbol.", "Wähle „Zum Dock hinzufügen“."], note: "Benötigt Safari 17 oder neuer." };
+        if (p.browser === "chrome") return { steps: ["Klicke rechts in der Adressleiste auf das Installieren-Symbol (Monitor mit Pfeil nach unten).", "Bestätige mit „Installieren“."], note: "Kein Symbol zu sehen? Öffne das Menü (⋮) und wähle „Streamen, speichern und teilen“ → „Seite als App installieren“ bzw. „RentenLife installieren“." };
+        if (p.browser === "edge") return { steps: ["Klicke rechts in der Adressleiste auf das App-Symbol („App verfügbar“).", "Bestätige mit „Installieren“."], note: "Alternativ im Menü (⋯) „Apps“ → „RentenLife installieren“ wählen." };
+        if (p.browser === "safari") {
+          if (p.safariMajor && p.safariMajor < 17) return { steps: [], note: "Dein Safari ist zu alt, Web-Apps gehen erst ab Safari 17 (macOS Sonoma). Aktualisiere macOS oder öffne diese Seite in Chrome oder Edge." };
+          return { steps: ["Klicke in der Symbolleiste auf das Teilen-Symbol oder öffne oben das Menü „Ablage“.", "Wähle „Zum Dock hinzufügen“.", "Bestätige mit „Hinzufügen“."], note: "" };
+        }
         if (p.browser === "firefox") return { steps: [], note: "Firefox am Computer kann Web-Apps nicht installieren. Öffne diese Seite in Chrome oder Edge, wenn du das Spiel installieren möchtest." };
+        if (p.browser === "opera") return { steps: [], note: "Opera am Computer kann Web-Apps meist nicht installieren. Öffne diese Seite in Chrome oder Edge, wenn du das Spiel installieren möchtest." };
         return { steps: ["Öffne das Browsermenü.", "Suche nach „App installieren“ oder „Zum Startbildschirm hinzufügen“."], note: "Nicht jeder Browser kann Web-Apps installieren. Chrome, Edge und Safari funktionieren am besten." };
       }
 
@@ -272,6 +294,16 @@
       window.addEventListener("load", function () {
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.register("ServiceWorker.js");
+          // Versionskennung des Service Workers klein im Ladebildschirm anzeigen
+          navigator.serviceWorker.ready.then(function (reg) {
+            var worker = navigator.serviceWorker.controller || reg.active;
+            if (!worker || !window.MessageChannel) return;
+            var channel = new MessageChannel();
+            channel.port1.onmessage = function (e) {
+              if (e.data) document.getElementById("loading-version").textContent = "Service Worker " + e.data;
+            };
+            worker.postMessage("rl-version", [channel.port2]);
+          }).catch(function () { /* ohne Service Worker keine Anzeige */ });
         }
       });
 

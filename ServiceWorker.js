@@ -1,4 +1,11 @@
-const cacheName = "DefaultCompany-RentenLife-2.1";
+const cacheName = "DefaultCompany-RentenLife-2.2";
+
+const swVersion = "2.2";
+
+// Die Seite fragt die Version ab und zeigt sie im Ladebildschirm an
+self.addEventListener('message', function (e) {
+    if (e.data === 'rl-version' && e.ports && e.ports[0]) { e.ports[0].postMessage(swVersion); }
+});
 
 // Beim Registrieren wird bewusst nichts vorab geladen: Das Spiel soll erst
 // heruntergeladen werden, wenn der Spieler es starten darf (siehe index.html).
