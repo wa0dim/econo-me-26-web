@@ -63,7 +63,8 @@
         var android = /Android/i.test(ua);
         var mobile = ios || android || /Mobile/i.test(ua);
         var browser = "other";
-        if (/SamsungBrowser/i.test(ua)) browser = "samsung";
+        if (/\bGSA\//i.test(ua)) browser = "google-app";
+        else if (/SamsungBrowser/i.test(ua)) browser = "samsung";
         else if (/EdgA|EdgiOS|Edg\//i.test(ua)) browser = "edge";
         else if (/FxiOS|Firefox/i.test(ua)) browser = "firefox";
         else if (/OPR|Opera|OPiOS/i.test(ua)) browser = "opera";
@@ -89,6 +90,8 @@
       }
 
       function rlIsStandalone() {
+        // Die Google-App ist ein Browser im Browser und meldet teils fullscreen/minimal-ui. Das ist keine installierte App.
+        if (/\bGSA\//i.test(navigator.userAgent)) return window.navigator.standalone === true;
         var modes = ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"];
         for (var i = 0; i < modes.length; i++) {
           if (window.matchMedia("(display-mode: " + modes[i] + ")").matches) return true;
@@ -100,6 +103,7 @@
 
       function rlInstallSteps(p) {
         // Rueckgabe: { steps: [...], note: "..." }
+        if (p.browser === "google-app") return { steps: ["Tippe auf das Teilen-Symbol oder die drei Punkte der Google-App und wähle „In Safari öffnen“ (iPhone) bzw. „In Chrome öffnen“ (Android).", "Folge dort der Installationsanleitung."], note: "Die Google-App kann Web-Apps nicht installieren.", warn: "Öffne diese Seite in Safari bzw. Chrome." };
         if (p.ios) {
           // Brave am iPhone: Menue (⋯) unten in der Leiste, Installieren ueber "Teilen"
           if (p.browser === "brave" || p.browser === "ios-webview") return { steps: ["Tippe oben oder unten in der Leiste auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).", "Scrolle nach unten und wähle „Zum Home-Bildschirm“ (ggf. unter „Mehr“).", "Tippe auf „Hinzufügen“."], note: "", warn: "Falls die Option fehlt, öffne diese Seite in Safari." };
