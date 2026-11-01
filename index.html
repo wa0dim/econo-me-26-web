@@ -187,7 +187,17 @@
         var rlRatioLocked = false;
         var rlRatioTimer = 0;
         var rlLastInner = { w: window.innerWidth, h: window.innerHeight };
+        // Wird gesetzt, wenn das Fenster sich nicht auf 9:16 zwingen lässt (z. B. weil es maximiert ist).
+        // So wird auch ein maximiertes Fenster erkannt, dessen Größe der Browser anders meldet als erwartet.
+        var rlSnapFailed = false;
+        var rlFailedInner = { w: 0, h: 0 };
+        function rlRatioOk() {
+          return Math.abs(window.innerWidth / window.innerHeight - RL_RATIO) < 0.02;
+        }
         function rlIsFullOrMaximized() {
+          return rlSnapFailed || rlDetectedFull();
+        }
+        function rlDetectedFull() {
           if (document.fullscreenElement) return true;
           if (window.matchMedia("(display-mode: fullscreen)").matches) return true; // F11 in der installierten App
           // Vollbild ohne Fensterrahmen: Seite so groß wie der ganze Bildschirm
@@ -206,9 +216,13 @@
           };
         };
         function rlEnforceRatio() {
-          if (!window.resizeTo || rlIsFullOrMaximized()) return;
+          if (!window.resizeTo) return;
           var w = window.innerWidth, h = window.innerHeight;
-          if (Math.abs(w / h - RL_RATIO) < 0.01) { rlLastInner = { w: w, h: h }; return; }
+          if (rlRatioOk()) { rlSnapFailed = false; rlLastInner = { w: w, h: h }; return; }
+          if (rlDetectedFull()) return;
+          // Hat sich die Fenstergröße seit dem letzten gescheiterten Versuch geändert, wird neu versucht
+          if (rlSnapFailed && (w !== rlFailedInner.w || h !== rlFailedInner.h)) rlSnapFailed = false;
+          if (rlSnapFailed) return;
           // Die Seite, die der Nutzer stärker verändert hat, bleibt, die andere wird angepasst
           var byWidth = Math.abs(w - rlLastInner.w) >= Math.abs(h - rlLastInner.h);
           var chromeW = window.outerWidth - w, chromeH = window.outerHeight - h;
@@ -218,6 +232,14 @@
           if (nh > maxH) { nh = maxH; nw = Math.round(nh * RL_RATIO); }
           try { window.resizeTo(nw + chromeW, nh + chromeH); } catch (e) { /* Fenstergroesse nicht aenderbar */ }
           rlLastInner = { w: nw, h: nh };
+          // Gibt das Fenster nicht nach (maximiert), gilt es als Vollbild. Nur bei Querformat bzw. fast quadratisch,
+          // damit ein Fenster, das der Browser nicht schmaler machen kann, nicht fälschlich als Vollbild zählt.
+          setTimeout(function () {
+            if (rlRatioOk() || window.innerWidth / window.innerHeight < 0.9) return;
+            rlSnapFailed = true;
+            rlFailedInner = { w: window.innerWidth, h: window.innerHeight };
+            rlUpdateWide();
+          }, 400);
         }
         // Vollbild oder maximiert: erst Warnung (Spiel bleibt solange im 9:16-Streifen), nach Bestaetigung
         // fuellt das Spiel den ganzen Bildschirm. Beim Verlassen beginnt es wieder von vorn.
@@ -254,7 +276,7 @@
             rlWideConfirmed = true;
             rlUpdateWide();
           });
-          setTimeout(rlUpdateWide, 600); // App startet evtl. schon maximiert
+          setTimeout(function () { rlEnforceRatio(); rlUpdateWide(); }, 600); // App startet evtl. schon maximiert
         }
         if (standalone && !platform.mobile) {
           fitWindow();
@@ -439,7 +461,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.9",
+        productVersion: "2.10",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
