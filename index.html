@@ -190,9 +190,21 @@
         function rlIsFullOrMaximized() {
           if (document.fullscreenElement) return true;
           if (window.matchMedia("(display-mode: fullscreen)").matches) return true; // F11 in der installierten App
-          var tol = 24; // Windows meldet maximierte Fenster mit kleinem Rand
+          // Vollbild ohne Fensterrahmen: Seite so groß wie der ganze Bildschirm
+          if (window.innerWidth >= screen.width - 2 && window.innerHeight >= screen.height - 2) return true;
+          var tol = 40; // Windows meldet maximierte Fenster mit kleinem Rand
           return window.outerWidth >= (screen.availWidth || screen.width) - tol && window.outerHeight >= (screen.availHeight || screen.height) - tol;
         }
+        // Zum Nachsehen in der Entwicklerkonsole (Strg+Umschalt+I): rentenLife.state()
+        window.rentenLife.state = function () {
+          return {
+            fullOrMaximized: rlIsFullOrMaximized(), confirmed: rlWideConfirmed, locked: rlRatioLocked,
+            standalone: window.rentenLife.standalone, mobile: platform.mobile,
+            displayFullscreen: window.matchMedia("(display-mode: fullscreen)").matches,
+            inner: [window.innerWidth, window.innerHeight], outer: [window.outerWidth, window.outerHeight],
+            avail: [screen.availWidth, screen.availHeight], screen: [screen.width, screen.height]
+          };
+        };
         function rlEnforceRatio() {
           if (!window.resizeTo || rlIsFullOrMaximized()) return;
           var w = window.innerWidth, h = window.innerHeight;
@@ -427,7 +439,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.8",
+        productVersion: "2.9",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
