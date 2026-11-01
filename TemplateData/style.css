@@ -1,6 +1,8 @@
 body { padding: 0; margin: 0; background: #ecece9; overflow: hidden; overscroll-behavior: none; touch-action: none }
-#unity-container { position: fixed; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); height: 100%; width: 100%; max-width: calc(100vh * 9 / 16); }
-@supports (height: 100dvh) { #unity-container { max-width: calc(100dvh * 9 / 16); } }
+/* Das Spiel füllt den ganzen Bildschirm, bis es breiter als 3:4 wird (Breite durch Höhe). Darüber entstehen Balken links und rechts. */
+:root { --rl-max-aspect: 0.75 }
+#unity-container { position: fixed; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); height: 100%; width: 100%; max-width: calc(100vh * var(--rl-max-aspect)); }
+@supports (height: 100dvh) { #unity-container { max-width: calc(100dvh * var(--rl-max-aspect)); } }
 #unity-fullscreen-container { position: relative; width: 100%; height: 100%; }
 #unity-canvas { position: absolute; width: 100%; height: 100%; background: #80807E }
 #unity-warning { position: absolute; left: 50%; top: 5%; transform: translate(-50%); background: white; padding: 10px; display: none }
