@@ -1,6 +1,8 @@
 body { padding: 0; margin: 0; background: #ecece9; overflow: hidden; overscroll-behavior: none; touch-action: none }
 /* Das Spiel füllt den ganzen Bildschirm, bis es breiter als 3:4 wird (Breite durch Höhe). Darüber entstehen Balken links und rechts. */
 :root { --rl-max-aspect: 0.75 }
+/* Am PC im Vollbild (nach bestätigter Warnung) füllt das Spiel den ganzen Bildschirm */
+html.rl-wide { --rl-max-aspect: 100 }
 #unity-container { position: fixed; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); height: 100%; width: 100%; max-width: calc(100vh * var(--rl-max-aspect)); }
 @supports (height: 100dvh) { #unity-container { max-width: calc(100dvh * var(--rl-max-aspect)); } }
 #unity-fullscreen-container { position: relative; width: 100%; height: 100%; }
@@ -35,3 +37,9 @@ body { padding: 0; margin: 0; background: #ecece9; overflow: hidden; overscroll-
 #warning-confirm { background: #9a3412; color: #fff }
 #warning-confirm:disabled { background: #d9d9d6; color: #8a8f95; cursor: not-allowed }
 #warning-back { background: #ecece9; color: #26303b }
+#wide-overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(38,48,59,0.45); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif }
+#wide-overlay[hidden] { display: none }
+#wide-card { box-sizing: border-box; width: 100%; max-width: 420px; max-height: 90%; overflow-y: auto; margin: 0 8px; padding: 20px 20px 16px; border-radius: 16px; background: #fff; color: #26303b; box-shadow: 0 8px 30px rgba(0,0,0,0.25) }
+#wide-card h2 { margin: 0 0 8px; font-size: 20px; color: #9a3412 }
+#wide-card p { margin: 0 0 12px; font-size: 15px; line-height: 1.4 }
+#wide-confirm { display: block; width: 100%; box-sizing: border-box; min-height: 48px; border: 0; border-radius: 10px; background: #26303b; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer }

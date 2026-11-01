@@ -53,6 +53,14 @@
           <button id="warning-back" type="button">Zurück zur Installation</button>
         </div>
       </div>
+      <div id="wide-overlay" hidden>
+        <div id="wide-card" role="alertdialog" aria-modal="true" aria-labelledby="wide-title">
+          <h2 id="wide-title">Nicht für 16:9 optimiert</h2>
+          <p>RentenLife ist für Handys im Hochformat gemacht. Im Vollbild auf einem breiten Bildschirm kann die Darstellung abweichen. Du kannst es trotzdem so spielen.</p>
+          <p>Zurück zum festen Fenster kommst du mit F11 oder dem Wiederherstellen-Knopf des Fensters.</p>
+          <button id="wide-confirm" type="button">Trotzdem im Vollbild spielen</button>
+        </div>
+      </div>
       <div id="unity-warning"> </div>
     </div>
     <script>
@@ -199,13 +207,42 @@
           try { window.resizeTo(nw + chromeW, nh + chromeH); } catch (e) { /* Fenstergroesse nicht aenderbar */ }
           rlLastInner = { w: nw, h: nh };
         }
+        // Vollbild oder maximiert: erst Warnung (Spiel bleibt solange im 9:16-Streifen), nach Bestaetigung
+        // fuellt das Spiel den ganzen Bildschirm. Beim Verlassen beginnt es wieder von vorn.
+        var rlWideConfirmed = false;
+        function rlSetWide(on) {
+          var root = document.documentElement;
+          if (root.classList.contains("rl-wide") === on) return;
+          root.classList.toggle("rl-wide", on);
+          window.dispatchEvent(new Event("resize")); // damit Unity die neue Groesse uebernimmt
+        }
+        function rlUpdateWide() {
+          var overlay = document.getElementById("wide-overlay");
+          if (!rlIsFullOrMaximized()) {
+            rlWideConfirmed = false;
+            overlay.hidden = true;
+            rlSetWide(false);
+          } else if (rlWideConfirmed) {
+            overlay.hidden = true;
+            rlSetWide(true);
+          } else {
+            overlay.hidden = false;
+          }
+        }
+        function rlOnWindowChange() {
+          clearTimeout(rlRatioTimer);
+          rlRatioTimer = setTimeout(function () { rlEnforceRatio(); rlUpdateWide(); }, 200);
+        }
         function rlLockRatio() {
           if (rlRatioLocked) return;
           rlRatioLocked = true;
-          window.addEventListener("resize", function () {
-            clearTimeout(rlRatioTimer);
-            rlRatioTimer = setTimeout(rlEnforceRatio, 200);
+          window.addEventListener("resize", rlOnWindowChange);
+          document.addEventListener("fullscreenchange", rlOnWindowChange);
+          document.getElementById("wide-confirm").addEventListener("click", function () {
+            rlWideConfirmed = true;
+            rlUpdateWide();
           });
+          setTimeout(rlUpdateWide, 600); // App startet evtl. schon maximiert
         }
         if (standalone && !platform.mobile) {
           fitWindow();
@@ -390,7 +427,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.7",
+        productVersion: "2.8",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
