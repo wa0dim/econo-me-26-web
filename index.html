@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#ecece9">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="RentenLife">
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="apple-touch-icon" href="TemplateData/icons/icon-192.png">
@@ -70,10 +70,15 @@
       // ohne eingeblendete Safari-Leisten, dann ragt das Spiel unten heraus und alles wirkt nach oben verschoben.
       (function () {
         var box = document.getElementById("unity-container");
+        // Sicherer Bereich oben (Statusleiste/Notch in der installierten iPhone-App), per Messfuehler gelesen
+        var probe = document.createElement("div");
+        probe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)";
+        document.body.appendChild(probe);
         function fit() {
           var vv = window.visualViewport;
           var viewW = Math.floor(vv ? vv.width : window.innerWidth);
-          var viewH = Math.floor(vv ? vv.height : window.innerHeight);
+          var inset = Math.ceil(parseFloat(getComputedStyle(probe).paddingTop) || 0);
+          var viewH = Math.floor(vv ? vv.height : window.innerHeight) - inset;
           var maxAspect = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rl-max-aspect")) || 0.6667;
           var w = Math.floor(Math.min(viewW, viewH * maxAspect));
           box.style.maxWidth = "none";
@@ -83,7 +88,7 @@
           box.style.width = w + "px";
           box.style.height = viewH + "px";
           box.style.left = Math.floor((viewW - w) / 2) + "px";
-          box.style.top = "0px";
+          box.style.top = inset + "px";
           window.scrollTo(0, 0); // Safari darf die Seite nicht verschieben
         }
         fit();
@@ -527,7 +532,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.16",
+        productVersion: "2.17",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
