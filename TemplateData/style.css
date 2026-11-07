@@ -3,10 +3,11 @@ body { padding: 0; margin: 0; background: #ecece9; overflow: hidden; overscroll-
 :root { --rl-max-aspect: 0.6667 }
 /* Am PC im Vollbild (nach bestätigter Warnung) füllt das Spiel den ganzen Bildschirm */
 html.rl-wide { --rl-max-aspect: 100 }
-#unity-container { position: fixed; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); height: 100%; width: 100%; max-width: calc(100vh * var(--rl-max-aspect)); }
+/* Zentriert ohne transform: ein transform mit halben Pixeln macht das Bild unscharf. Die Breite rundet ein kleines Skript in index.html auf ganze Pixel. */
+#unity-container { position: fixed; top: 0; bottom: 0; left: 0; right: 0; margin: 0 auto; height: 100%; width: 100%; max-width: calc(100vh * var(--rl-max-aspect)); }
 @supports (height: 100dvh) { #unity-container { max-width: calc(100dvh * var(--rl-max-aspect)); } }
 #unity-fullscreen-container { position: relative; width: 100%; height: 100%; }
-#unity-canvas { position: absolute; width: 100%; height: 100%; background: #80807E }
+#unity-canvas { position: absolute; width: 100%; height: 100%; background: #ecece9 }
 #unity-warning { position: absolute; left: 50%; top: 5%; transform: translate(-50%); background: white; padding: 10px; display: none }
 #unity-loading-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #ecece9; color: #26303b; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center }
 #unity-loading-bar { width: 70%; max-width: 360px }

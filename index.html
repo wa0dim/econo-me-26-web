@@ -65,6 +65,24 @@
       </div>
     </div>
     <script>
+      // Breite des Spiels auf ganze Pixel runden und mittig setzen (halbe Pixel machen die Schrift unscharf)
+      (function () {
+        var box = document.getElementById("unity-container");
+        function fit() {
+          var maxAspect = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rl-max-aspect")) || 0.6667;
+          var w = Math.floor(Math.min(window.innerWidth, window.innerHeight * maxAspect));
+          box.style.maxWidth = "none";
+          box.style.margin = "0";
+          box.style.right = "auto";
+          box.style.width = w + "px";
+          box.style.left = Math.floor((window.innerWidth - w) / 2) + "px";
+        }
+        fit();
+        window.addEventListener("resize", fit);
+        window.addEventListener("orientationchange", fit);
+      })();
+    </script>
+    <script>
       // ---- Installations-Erkennung und Anleitung (Web-App / PWA) ----
       // Apps mit eigenem Browser (Google-App, Instagram, Facebook, TikTok, ...). Dort kann man nicht installieren.
       var RL_IN_APP = /\bGSA\/|FBAN|FBAV|FB_IAB|FBIOS|Instagram|LinkedInApp|Snapchat|musical_ly|Bytedance|TikTok|Twitter|\bLine\/|MicroMessenger|Pinterest|Telegram|; wv\)/i;
@@ -498,7 +516,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.14",
+        productVersion: "2.15",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
