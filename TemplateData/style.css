@@ -1,3 +1,4 @@
+html { height: 100%; overflow: hidden; background: #ecece9 }
 body { padding: 0; margin: 0; background: #ecece9; overflow: hidden; overscroll-behavior: none; touch-action: none }
 /* Das Spiel füllt den ganzen Bildschirm, bis es breiter als 2:3 wird (Breite durch Höhe). Darüber entstehen Balken links und rechts. Das UI ist für 2:3 bis 9:16 und höhere Handys gebaut. */
 :root { --rl-max-aspect: 0.6667 }

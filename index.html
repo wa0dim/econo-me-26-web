@@ -65,21 +65,32 @@
       </div>
     </div>
     <script>
-      // Breite des Spiels auf ganze Pixel runden und mittig setzen (halbe Pixel machen die Schrift unscharf)
+      // Breite des Spiels auf ganze Pixel runden und mittig setzen (halbe Pixel machen die Schrift unscharf).
+      // Die Hoehe ist die sichtbare Hoehe des Fensters. Am iPhone ist "100%" bei fixierten Elementen die Hoehe
+      // ohne eingeblendete Safari-Leisten, dann ragt das Spiel unten heraus und alles wirkt nach oben verschoben.
       (function () {
         var box = document.getElementById("unity-container");
         function fit() {
+          var vv = window.visualViewport;
+          var viewW = Math.floor(vv ? vv.width : window.innerWidth);
+          var viewH = Math.floor(vv ? vv.height : window.innerHeight);
           var maxAspect = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rl-max-aspect")) || 0.6667;
-          var w = Math.floor(Math.min(window.innerWidth, window.innerHeight * maxAspect));
+          var w = Math.floor(Math.min(viewW, viewH * maxAspect));
           box.style.maxWidth = "none";
           box.style.margin = "0";
           box.style.right = "auto";
+          box.style.bottom = "auto";
           box.style.width = w + "px";
-          box.style.left = Math.floor((window.innerWidth - w) / 2) + "px";
+          box.style.height = viewH + "px";
+          box.style.left = Math.floor((viewW - w) / 2) + "px";
+          box.style.top = "0px";
+          window.scrollTo(0, 0); // Safari darf die Seite nicht verschieben
         }
         fit();
         window.addEventListener("resize", fit);
         window.addEventListener("orientationchange", fit);
+        window.addEventListener("pageshow", fit);
+        if (window.visualViewport) window.visualViewport.addEventListener("resize", fit);
       })();
     </script>
     <script>
@@ -516,7 +527,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.15",
+        productVersion: "2.16",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
