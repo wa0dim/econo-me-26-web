@@ -1,6 +1,6 @@
 body { padding: 0; margin: 0; background: #ecece9; overflow: hidden; overscroll-behavior: none; touch-action: none }
-/* Das Spiel füllt den ganzen Bildschirm, bis es breiter als 3:4 wird (Breite durch Höhe). Darüber entstehen Balken links und rechts. */
-:root { --rl-max-aspect: 0.75 }
+/* Das Spiel füllt den ganzen Bildschirm, bis es breiter als 2:3 wird (Breite durch Höhe). Darüber entstehen Balken links und rechts. Das UI ist für 2:3 bis 9:16 und höhere Handys gebaut. */
+:root { --rl-max-aspect: 0.6667 }
 /* Am PC im Vollbild (nach bestätigter Warnung) füllt das Spiel den ganzen Bildschirm */
 html.rl-wide { --rl-max-aspect: 100 }
 #unity-container { position: fixed; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); height: 100%; width: 100%; max-width: calc(100vh * var(--rl-max-aspect)); }

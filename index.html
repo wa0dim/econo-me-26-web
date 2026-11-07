@@ -31,37 +31,38 @@
           <div id="loading-version" style="position:absolute;left:0;right:0;bottom:calc(8px + env(safe-area-inset-bottom));font-size:11px;color:#9aa0a6;text-align:center;pointer-events:none"></div>
         </div>
       </div>
-      <div id="install-overlay" hidden>
-        <div id="install-card" role="dialog" aria-modal="true" aria-labelledby="install-title">
-          <h2 id="install-title">RentenLife installieren</h2>
-          <p id="install-intro">Installiere das Spiel als App. Dann startet es im Vollbild und ohne Browserleiste.</p>
-          <ol id="install-steps"></ol>
-          <p id="install-note"></p>
-          <button id="install-button" type="button" hidden>Jetzt installieren</button>
-          <button id="install-dismiss" type="button">Trotzdem im Browser spielen</button>
-        </div>
-        <div id="browser-warning" role="alertdialog" aria-modal="true" aria-labelledby="warning-title" hidden>
-          <h2 id="warning-title">Achtung: Nicht für den Browser gemacht</h2>
-          <p>RentenLife wurde dafür gemacht, als installierte Web-App gespielt zu werden, nicht als normale Webseite im Browser.</p>
-          <ul>
-            <li>Die Darstellung kann abweichen, weil Adressleiste und Menüs Platz wegnehmen.</li>
-            <li>Der Spielstand liegt im Speicher des Browsers und kann verloren gehen, wenn dieser aufgeräumt wird oder du im privaten Modus spielst.</li>
-            <li>Das Spiel läuft im Browser eventuell langsamer oder weniger stabil.</li>
-          </ul>
-          <label id="warning-check-label"><input type="checkbox" id="warning-check"> Ich habe verstanden, dass das Spiel nicht für den Browser-Betrieb gemacht ist, und spiele auf eigenes Risiko.</label>
-          <button id="warning-confirm" type="button" disabled>Im Browser spielen</button>
-          <button id="warning-back" type="button">Zurück zur Installation</button>
-        </div>
-      </div>
-      <div id="wide-overlay" hidden>
-        <div id="wide-card" role="alertdialog" aria-modal="true" aria-labelledby="wide-title">
-          <h2 id="wide-title">Nicht für 16:9 optimiert</h2>
-          <p>RentenLife ist für Handys im Hochformat gemacht. Im Vollbild auf einem breiten Bildschirm kann die Darstellung abweichen. Du kannst es trotzdem so spielen.</p>
-          <p>Zurück zum festen Fenster kommst du mit F11 oder dem Wiederherstellen-Knopf des Fensters.</p>
-          <button id="wide-confirm" type="button">Trotzdem im Vollbild spielen</button>
-        </div>
-      </div>
       <div id="unity-warning"> </div>
+    </div>
+    <!-- Overlays direkt im body: position fixed bezieht sich sonst auf den Container (transform) und dunkelt nur diesen ab -->
+    <div id="install-overlay" hidden>
+      <div id="install-card" role="dialog" aria-modal="true" aria-labelledby="install-title">
+        <h2 id="install-title">RentenLife installieren</h2>
+        <p id="install-intro">Installiere das Spiel als App. Dann startet es im Vollbild und ohne Browserleiste.</p>
+        <ol id="install-steps"></ol>
+        <p id="install-note"></p>
+        <button id="install-button" type="button" hidden>Jetzt installieren</button>
+        <button id="install-dismiss" type="button">Trotzdem im Browser spielen</button>
+      </div>
+      <div id="browser-warning" role="alertdialog" aria-modal="true" aria-labelledby="warning-title" hidden>
+        <h2 id="warning-title">Achtung: Nicht für den Browser gemacht</h2>
+        <p>RentenLife wurde dafür gemacht, als installierte Web-App gespielt zu werden, nicht als normale Webseite im Browser.</p>
+        <ul>
+          <li>Die Darstellung kann abweichen, weil Adressleiste und Menüs Platz wegnehmen.</li>
+          <li>Der Spielstand liegt im Speicher des Browsers und kann verloren gehen, wenn dieser aufgeräumt wird oder du im privaten Modus spielst.</li>
+          <li>Das Spiel läuft im Browser eventuell langsamer oder weniger stabil.</li>
+        </ul>
+        <label id="warning-check-label"><input type="checkbox" id="warning-check"> Ich habe verstanden, dass das Spiel nicht für den Browser-Betrieb gemacht ist, und spiele auf eigenes Risiko.</label>
+        <button id="warning-confirm" type="button" disabled>Im Browser spielen</button>
+        <button id="warning-back" type="button">Zurück zur Installation</button>
+      </div>
+    </div>
+    <div id="wide-overlay" hidden>
+      <div id="wide-card" role="alertdialog" aria-modal="true" aria-labelledby="wide-title">
+        <h2 id="wide-title">Nicht für 16:9 optimiert</h2>
+        <p>RentenLife ist für Handys im Hochformat gemacht. Im Vollbild auf einem breiten Bildschirm kann die Darstellung abweichen. Du kannst es trotzdem so spielen.</p>
+        <p>Zurück zum festen Fenster kommst du mit F11 oder dem Wiederherstellen-Knopf des Fensters.</p>
+        <button id="wide-confirm" type="button">Trotzdem im Vollbild spielen</button>
+      </div>
     </div>
     <script>
       // ---- Installations-Erkennung und Anleitung (Web-App / PWA) ----
@@ -164,6 +165,10 @@
         var platform = rlDetectPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints || 0, typeof navigator.standalone !== "undefined");
         var standalone = rlIsStandalone();
         window.rentenLife = { standalone: standalone, platform: platform };
+        // Merken, dass die App installiert ist. Im Browser-Tab am PC steht dann der Hinweis, sie ueber die App zu oeffnen.
+        function rlMarkInstalled() { try { localStorage.setItem("rlInstalled", "1"); } catch (e) { /* Speicher nicht verfuegbar */ } }
+        function rlWasInstalled() { try { return localStorage.getItem("rlInstalled") === "1"; } catch (e) { return false; } }
+        if (standalone) rlMarkInstalled();
 
         // Am Computer: installierte App im 9:16-Fenster oeffnen
         var fitWindow = function () {
@@ -327,6 +332,36 @@
           stepsEl.hidden = info.steps.length === 0;
         }
         rlRenderSteps();
+
+        // Am Computer: Ist die App schon installiert, steht ein Hinweis, das Spiel ueber die App zu oeffnen
+        var rlInstalledHintShown = false;
+        var rlIntroText = document.getElementById("install-intro").textContent;
+        function rlShowInstalledHint() {
+          if (rlInstalledHintShown || rlInstalledHandled) return;
+          rlInstalledHintShown = true;
+          document.getElementById("install-title").textContent = "RentenLife ist schon installiert";
+          document.getElementById("install-intro").textContent = "Öffne das Spiel über die App (Startmenü, Desktop oder Taskleiste) statt im Browser. Dort läuft es im passenden Fenster.";
+          stepsEl.hidden = true;
+          noteEl.hidden = true;
+          installBtn.hidden = true;
+        }
+        // Meldet der Browser, dass man installieren kann, war der Merker veraltet (App wurde deinstalliert)
+        function rlClearInstalledHint() {
+          if (!rlInstalledHintShown) return;
+          rlInstalledHintShown = false;
+          try { localStorage.removeItem("rlInstalled"); } catch (e) { /* ignorieren */ }
+          document.getElementById("install-title").textContent = "RentenLife installieren";
+          document.getElementById("install-intro").textContent = rlIntroText;
+          rlRenderSteps();
+        }
+        if (!platform.mobile) {
+          if (rlWasInstalled()) rlShowInstalledHint();
+          if (navigator.getInstalledRelatedApps) {
+            navigator.getInstalledRelatedApps().then(function (apps) {
+              if (apps && apps.length) rlShowInstalledHint();
+            }).catch(function () { /* Erkennung nicht moeglich */ });
+          }
+        }
         // Brave meldet sich im User-Agent wie Safari/Chrome, erkennbar nur ueber navigator.brave
         if (platform.mobile && navigator.brave && typeof navigator.brave.isBrave === "function") {
           navigator.brave.isBrave().then(function (isBrave) {
@@ -338,6 +373,7 @@
         window.addEventListener("beforeinstallprompt", function (e) {
           e.preventDefault();
           deferredPrompt = e;
+          rlClearInstalledHint();
           installBtn.hidden = false;
         });
         installBtn.addEventListener("click", function () {
@@ -361,6 +397,7 @@
           } else {
             // Computer: Der Browser oeffnet die App direkt, also sofort starten (9:16-Fenster, ohne Warnung)
             window.rentenLife.standalone = true;
+            rlMarkInstalled();
             overlay.hidden = true;
             fitWindow();
             setTimeout(fitWindow, 300);
@@ -461,7 +498,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.13",
+        productVersion: "2.14",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
