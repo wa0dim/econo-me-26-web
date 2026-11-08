@@ -74,11 +74,19 @@
         var probe = document.createElement("div");
         probe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)";
         document.body.appendChild(probe);
+        // Bildschirmtastatur: Sie verkleinert die sichtbare Hoehe stark. Dann bleibt das Spiel so gross wie vorher
+        // (die Tastatur liegt darueber), sonst schrumpft und verschiebt sich das ganze Spiel beim Tippen.
+        var baseW = 0, baseH = 0;
         function fit() {
           var vv = window.visualViewport;
           var viewW = Math.floor(vv ? vv.width : window.innerWidth);
           var inset = Math.ceil(parseFloat(getComputedStyle(probe).paddingTop) || 0);
-          var viewH = Math.floor(vv ? vv.height : window.innerHeight) - inset;
+          var rawH = Math.floor(vv ? vv.height : window.innerHeight);
+          if (!baseH || viewW !== baseW || rawH >= baseH * 0.75) { baseW = viewW; baseH = rawH; }
+          var viewH = baseH - inset;
+          // Schiebt der Browser die sichtbare Flaeche (beim Tippen), wandert das Spiel mit, damit es auf dem Bildschirm stehen bleibt
+          var offTop = vv ? Math.round(vv.offsetTop) : 0;
+          var offLeft = vv ? Math.round(vv.offsetLeft) : 0;
           var maxAspect = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rl-max-aspect")) || 0.6667;
           var w = Math.floor(Math.min(viewW, viewH * maxAspect));
           box.style.maxWidth = "none";
@@ -87,15 +95,18 @@
           box.style.bottom = "auto";
           box.style.width = w + "px";
           box.style.height = viewH + "px";
-          box.style.left = Math.floor((viewW - w) / 2) + "px";
-          box.style.top = inset + "px";
+          box.style.left = (Math.floor((viewW - w) / 2) + offLeft) + "px";
+          box.style.top = (inset + offTop) + "px";
           window.scrollTo(0, 0); // Safari darf die Seite nicht verschieben
         }
         fit();
         window.addEventListener("resize", fit);
         window.addEventListener("orientationchange", fit);
         window.addEventListener("pageshow", fit);
-        if (window.visualViewport) window.visualViewport.addEventListener("resize", fit);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener("resize", fit);
+          window.visualViewport.addEventListener("scroll", fit);
+        }
       })();
     </script>
     <script>
@@ -532,7 +543,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.19",
+        productVersion: "2.20",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
