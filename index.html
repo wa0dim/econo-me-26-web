@@ -543,7 +543,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.23",
+        productVersion: "2.24",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
@@ -580,6 +580,29 @@
         requestAnimationFrame(function () { requestAnimationFrame(rlHideLoading); });
       };
 
+      // Zurueck-Taste von Android: Solange im Spiel ein "Zurueck"-Knopf sichtbar ist, liegt ein zusaetzlicher
+      // Verlaufseintrag bereit. Drueckt man Zurueck, verbraucht das diesen Eintrag und das Spiel klickt den Knopf.
+      // Ist keiner sichtbar (Startseite), gibt es keinen Eintrag, die Taste verlaesst wie gewohnt die App.
+      var rlUnity = null;
+      var rlBackArmed = false;
+      var rlBackIgnore = false;
+      window.rlSetBackAvailable = function (can) {
+        if (can && !rlBackArmed) {
+          try { history.pushState({ rlBack: 1 }, ""); rlBackArmed = true; } catch (e) {}
+        } else if (!can && rlBackArmed) {
+          rlBackArmed = false;
+          rlBackIgnore = true;
+          history.back();
+        }
+      };
+      window.addEventListener("popstate", function () {
+        if (rlBackIgnore) { rlBackIgnore = false; return; }
+        if (rlBackArmed) {
+          rlBackArmed = false;
+          if (rlUnity) rlUnity.SendMessage("BackHandler", "OnBrowserBack");
+        }
+      });
+
       // Das Spiel wird erst geladen, wenn rlStartGame() aufgerufen wird
       // (installierte App oder bestaetigte Browser-Warnung, siehe oben).
       var rlStarted = false;
@@ -602,6 +625,7 @@
             loadingPercent.textContent = "Starte …";
           }
         }).then((unityInstance) => {
+          rlUnity = unityInstance;
           // Falls das Spiel nie "bereit" meldet (oder das erste Bild sehr lange braucht), blendet der Timer den Ladebildschirm nach 12 s trotzdem aus
           setTimeout(rlHideLoading, 12000);
           try { sessionStorage.removeItem("rlAutoReload"); } catch (e) {}
