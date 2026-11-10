@@ -543,7 +543,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.21",
+        productVersion: "2.22",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
@@ -604,7 +604,20 @@
         }).then((unityInstance) => {
           // Falls das Spiel nie "bereit" meldet (oder das erste Bild sehr lange braucht), blendet der Timer den Ladebildschirm nach 12 s trotzdem aus
           setTimeout(rlHideLoading, 12000);
+          try { sessionStorage.removeItem("rlAutoReload"); } catch (e) {}
         }).catch((message) => {
+          // Kurze Lade- oder Netzfehler (zum Beispiel gleich nach einem Update, wenn die neuen Dateien noch nicht
+          // ueberall liegen): Einmal automatisch mit leerem Cache neu laden, statt eine Fehlermeldung zu zeigen.
+          var tried = false;
+          try { tried = sessionStorage.getItem("rlAutoReload") === "1"; } catch (e) {}
+          if (!tried) {
+            try { sessionStorage.setItem("rlAutoReload", "1"); } catch (e) {}
+            var reload = function () { location.reload(); };
+            if (window.caches && caches.keys) {
+              caches.keys().then(function (keys) { return Promise.all(keys.map(function (k) { return caches.delete(k); })); }).then(reload, reload);
+            } else { reload(); }
+            return;
+          }
           alert(message);
         });
       };

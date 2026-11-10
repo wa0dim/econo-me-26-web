@@ -1,6 +1,6 @@
-const cacheName = "DefaultCompany-RentenLife-2.21";
+const cacheName = "DefaultCompany-RentenLife-2.22";
 
-const swVersion = "2.21";
+const swVersion = "2.22";
 
 // Die Seite fragt die Version ab und zeigt sie im Ladebildschirm an
 self.addEventListener('message', function (e) {
@@ -47,7 +47,10 @@ self.addEventListener('fetch', function (e) {
       const cached = await cache.match(e.request);
       if (cached) { return cached; }
       const response = await fetch(e.request);
-      if (response.ok) { cache.put(e.request, response.clone()); }
+      // Eine Fehlerseite (HTML) darf nie als Build-Datei im Cache landen
+      const type = response.headers.get('content-type') || '';
+      const isHtmlInBuild = type.indexOf('text/html') >= 0 && url.pathname.indexOf('/Build/') >= 0;
+      if (response.ok && !isHtmlInBuild) { cache.put(e.request, response.clone()); }
       return response;
     })());
 });
