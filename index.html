@@ -59,8 +59,8 @@
     <div id="wide-overlay" hidden>
       <div id="wide-card" role="alertdialog" aria-modal="true" aria-labelledby="wide-title">
         <h2 id="wide-title">Nicht für 16:9 optimiert</h2>
-        <p>RentenLife ist für Handys im Hochformat gemacht. Im Vollbild auf einem breiten Bildschirm kann die Darstellung abweichen. Du kannst es trotzdem so spielen.</p>
-        <p>Zurück zum festen Fenster kommst du mit F11 oder dem Wiederherstellen-Knopf des Fensters.</p>
+        <p id="wide-text1">RentenLife ist für Handys im Hochformat gemacht. Im Vollbild auf einem breiten Bildschirm kann die Darstellung abweichen. Du kannst es trotzdem so spielen.</p>
+        <p id="wide-text2">Zurück zum festen Fenster kommst du mit F11 oder dem Wiederherstellen-Knopf des Fensters.</p>
         <button id="wide-confirm" type="button">Trotzdem im Vollbild spielen</button>
       </div>
     </div>
@@ -244,7 +244,20 @@
         function rlRatioOk() {
           return Math.abs(window.innerWidth / window.innerHeight - RL_RATIO) < 0.02;
         }
+        // Tablets: Das Fenster laesst sich nicht verkleinern, die App fuellt immer den Bildschirm. Breit ist sie,
+        // sobald die Seite breiter als das Spiel-Format ist (RL_TABLET_MAX, gleich --rl-max-aspect in style.css),
+        // dann entstehen sonst Balken links und rechts. Wie in fit() zaehlt eine eingeblendete Bildschirmtastatur
+        // nicht mit (sie verkleinert die Hoehe stark, das Seitenverhaeltnis wuerde sonst springen).
+        var RL_TABLET_MAX = 2 / 3;
+        var rlIsTablet = platform.mobile && Math.min(screen.width, screen.height) >= 600;
+        var rlTabBase = { w: 0, h: 0 };
+        function rlTabletWide() {
+          var w = window.innerWidth, h = window.innerHeight;
+          if (!rlTabBase.h || w !== rlTabBase.w || h >= rlTabBase.h * 0.75) rlTabBase = { w: w, h: h };
+          return rlTabBase.w / rlTabBase.h > RL_TABLET_MAX + 0.02;
+        }
         function rlIsFullOrMaximized() {
+          if (rlIsTablet) return rlTabletWide();
           return rlSnapFailed || rlDetectedFull();
         }
         function rlDetectedFull() {
@@ -259,14 +272,14 @@
         window.rentenLife.state = function () {
           return {
             fullOrMaximized: rlIsFullOrMaximized(), confirmed: rlWideConfirmed, locked: rlRatioLocked,
-            standalone: window.rentenLife.standalone, mobile: platform.mobile,
+            standalone: window.rentenLife.standalone, mobile: platform.mobile, tablet: rlIsTablet,
             displayFullscreen: window.matchMedia("(display-mode: fullscreen)").matches,
             inner: [window.innerWidth, window.innerHeight], outer: [window.outerWidth, window.outerHeight],
             avail: [screen.availWidth, screen.availHeight], screen: [screen.width, screen.height]
           };
         };
         function rlEnforceRatio() {
-          if (!window.resizeTo) return;
+          if (rlIsTablet || !window.resizeTo) return; // am Tablet gibt es kein Fenster zum Anpassen
           var w = window.innerWidth, h = window.innerHeight;
           if (rlRatioOk()) { rlSnapFailed = false; rlLastInner = { w: w, h: h }; return; }
           if (rlDetectedFull()) return;
@@ -310,6 +323,12 @@
             overlay.hidden = true;
             rlSetWide(true);
           } else {
+            if (rlIsTablet) {
+              document.getElementById("wide-title").textContent = "Nicht fürs Tablet-Format gemacht";
+              document.getElementById("wide-text1").textContent = "RentenLife ist für Handys im Hochformat gemacht. Auf einem Tablet kann die Darstellung abweichen. Du kannst es trotzdem so spielen.";
+              document.getElementById("wide-text2").textContent = "Ohne Bestätigung bleibt das Spiel in einem schmalen Streifen in der Mitte.";
+              document.getElementById("wide-confirm").textContent = "Trotzdem im ganzen Bild spielen";
+            }
             overlay.hidden = false;
           }
         }
@@ -321,6 +340,7 @@
           if (rlRatioLocked) return;
           rlRatioLocked = true;
           window.addEventListener("resize", rlOnWindowChange);
+          window.addEventListener("orientationchange", rlOnWindowChange);
           document.addEventListener("fullscreenchange", rlOnWindowChange);
           document.getElementById("wide-confirm").addEventListener("click", function () {
             rlWideConfirmed = true;
@@ -331,6 +351,8 @@
         if (standalone && !platform.mobile) {
           fitWindow();
           setTimeout(fitWindow, 300);
+          rlLockRatio();
+        } else if (standalone && rlIsTablet) {
           rlLockRatio();
         }
 
@@ -543,7 +565,7 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.32",
+        productVersion: "2.34",
         // without this, files in Application.persistentDataPath (the save games) stay in memory only
         // and are gone after reloading the page; true writes them to IndexedDB when the file is closed
         autoSyncPersistentDataPath: true,
