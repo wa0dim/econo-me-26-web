@@ -1,6 +1,6 @@
-const cacheName = "DefaultCompany-RentenLife-2.34";
+const cacheName = "DefaultCompany-RentenLife-2.35";
 
-const swVersion = "2.34";
+const swVersion = "2.35";
 
 // Die Seite fragt die Version ab und zeigt sie im Ladebildschirm an
 self.addEventListener('message', function (e) {
