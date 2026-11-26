@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#ecece9">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="RentenLife">
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="apple-touch-icon" href="TemplateData/icons/icon-192.png">
@@ -31,30 +31,84 @@
           <div id="loading-version" style="position:absolute;left:0;right:0;bottom:calc(8px + env(safe-area-inset-bottom));font-size:11px;color:#9aa0a6;text-align:center;pointer-events:none"></div>
         </div>
       </div>
-      <div id="install-overlay" hidden>
-        <div id="install-card" role="dialog" aria-modal="true" aria-labelledby="install-title">
-          <h2 id="install-title">RentenLife installieren</h2>
-          <p id="install-intro">Installiere das Spiel als App. Dann startet es im Vollbild und ohne Browserleiste.</p>
-          <ol id="install-steps"></ol>
-          <p id="install-note"></p>
-          <button id="install-button" type="button" hidden>Jetzt installieren</button>
-          <button id="install-dismiss" type="button">Trotzdem im Browser spielen</button>
-        </div>
-        <div id="browser-warning" role="alertdialog" aria-modal="true" aria-labelledby="warning-title" hidden>
-          <h2 id="warning-title">Achtung: Nicht für den Browser gemacht</h2>
-          <p>RentenLife wurde dafür gemacht, als installierte Web-App gespielt zu werden, nicht als normale Webseite im Browser.</p>
-          <ul>
-            <li>Die Darstellung kann abweichen, weil Adressleiste und Menüs Platz wegnehmen.</li>
-            <li>Der Spielstand liegt im Speicher des Browsers und kann verloren gehen, wenn dieser aufgeräumt wird oder du im privaten Modus spielst.</li>
-            <li>Das Spiel läuft im Browser eventuell langsamer oder weniger stabil.</li>
-          </ul>
-          <label id="warning-check-label"><input type="checkbox" id="warning-check"> Ich habe verstanden, dass das Spiel nicht für den Browser-Betrieb gemacht ist, und spiele auf eigenes Risiko.</label>
-          <button id="warning-confirm" type="button" disabled>Im Browser spielen</button>
-          <button id="warning-back" type="button">Zurück zur Installation</button>
-        </div>
-      </div>
       <div id="unity-warning"> </div>
     </div>
+    <!-- Overlays direkt im body: position fixed bezieht sich sonst auf den Container (transform) und dunkelt nur diesen ab -->
+    <div id="install-overlay" hidden>
+      <div id="install-card" role="dialog" aria-modal="true" aria-labelledby="install-title">
+        <h2 id="install-title">RentenLife installieren</h2>
+        <p id="install-intro">Installiere das Spiel als App. Dann startet es im Vollbild und ohne Browserleiste.</p>
+        <ol id="install-steps"></ol>
+        <p id="install-note"></p>
+        <button id="install-button" type="button" hidden>Jetzt installieren</button>
+        <button id="install-dismiss" type="button">Trotzdem im Browser spielen</button>
+      </div>
+      <div id="browser-warning" role="alertdialog" aria-modal="true" aria-labelledby="warning-title" hidden>
+        <h2 id="warning-title">Achtung: Nicht für den Browser gemacht</h2>
+        <p>RentenLife wurde dafür gemacht, als installierte Web-App gespielt zu werden, nicht als normale Webseite im Browser.</p>
+        <ul>
+          <li>Die Darstellung kann abweichen, weil Adressleiste und Menüs Platz wegnehmen.</li>
+          <li>Der Spielstand liegt im Speicher des Browsers und kann verloren gehen, wenn dieser aufgeräumt wird oder du im privaten Modus spielst.</li>
+          <li>Das Spiel läuft im Browser eventuell langsamer oder weniger stabil.</li>
+        </ul>
+        <label id="warning-check-label"><input type="checkbox" id="warning-check"> Ich habe verstanden, dass das Spiel nicht für den Browser-Betrieb gemacht ist, und spiele auf eigenes Risiko.</label>
+        <button id="warning-confirm" type="button" disabled>Im Browser spielen</button>
+        <button id="warning-back" type="button">Zurück zur Installation</button>
+      </div>
+    </div>
+    <div id="wide-overlay" hidden>
+      <div id="wide-card" role="alertdialog" aria-modal="true" aria-labelledby="wide-title">
+        <h2 id="wide-title">Nicht für 16:9 optimiert</h2>
+        <p id="wide-text1">RentenLife ist für Handys im Hochformat gemacht. Im Vollbild auf einem breiten Bildschirm kann die Darstellung abweichen. Du kannst es trotzdem so spielen.</p>
+        <p id="wide-text2">Zurück zum festen Fenster kommst du mit F11 oder dem Wiederherstellen-Knopf des Fensters.</p>
+        <button id="wide-confirm" type="button">Trotzdem im Vollbild spielen</button>
+      </div>
+    </div>
+    <script>
+      // Breite des Spiels auf ganze Pixel runden und mittig setzen (halbe Pixel machen die Schrift unscharf).
+      // Die Hoehe ist die sichtbare Hoehe des Fensters. Am iPhone ist "100%" bei fixierten Elementen die Hoehe
+      // ohne eingeblendete Safari-Leisten, dann ragt das Spiel unten heraus und alles wirkt nach oben verschoben.
+      (function () {
+        var box = document.getElementById("unity-container");
+        // Sicherer Bereich oben (Statusleiste/Notch in der installierten iPhone-App), per Messfuehler gelesen
+        var probe = document.createElement("div");
+        probe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)";
+        document.body.appendChild(probe);
+        // Bildschirmtastatur: Sie verkleinert die sichtbare Hoehe stark. Dann bleibt das Spiel so gross wie vorher
+        // (die Tastatur liegt darueber), sonst schrumpft und verschiebt sich das ganze Spiel beim Tippen.
+        var baseW = 0, baseH = 0;
+        function fit() {
+          var vv = window.visualViewport;
+          var viewW = Math.floor(vv ? vv.width : window.innerWidth);
+          var inset = Math.ceil(parseFloat(getComputedStyle(probe).paddingTop) || 0);
+          var rawH = Math.floor(vv ? vv.height : window.innerHeight);
+          if (!baseH || viewW !== baseW || rawH >= baseH * 0.75) { baseW = viewW; baseH = rawH; }
+          var viewH = baseH - inset;
+          // Schiebt der Browser die sichtbare Flaeche (beim Tippen), wandert das Spiel mit, damit es auf dem Bildschirm stehen bleibt
+          var offTop = vv ? Math.round(vv.offsetTop) : 0;
+          var offLeft = vv ? Math.round(vv.offsetLeft) : 0;
+          var maxAspect = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rl-max-aspect")) || 0.6667;
+          var w = Math.floor(Math.min(viewW, viewH * maxAspect));
+          box.style.maxWidth = "none";
+          box.style.margin = "0";
+          box.style.right = "auto";
+          box.style.bottom = "auto";
+          box.style.width = w + "px";
+          box.style.height = viewH + "px";
+          box.style.left = (Math.floor((viewW - w) / 2) + offLeft) + "px";
+          box.style.top = (inset + offTop) + "px";
+          window.scrollTo(0, 0); // Safari darf die Seite nicht verschieben
+        }
+        fit();
+        window.addEventListener("resize", fit);
+        window.addEventListener("orientationchange", fit);
+        window.addEventListener("pageshow", fit);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener("resize", fit);
+          window.visualViewport.addEventListener("scroll", fit);
+        }
+      })();
+    </script>
     <script>
       // ---- Installations-Erkennung und Anleitung (Web-App / PWA) ----
       // Apps mit eigenem Browser (Google-App, Instagram, Facebook, TikTok, ...). Dort kann man nicht installieren.
@@ -156,6 +210,10 @@
         var platform = rlDetectPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints || 0, typeof navigator.standalone !== "undefined");
         var standalone = rlIsStandalone();
         window.rentenLife = { standalone: standalone, platform: platform };
+        // Merken, dass die App installiert ist. Im Browser-Tab am PC steht dann der Hinweis, sie ueber die App zu oeffnen.
+        function rlMarkInstalled() { try { localStorage.setItem("rlInstalled", "1"); } catch (e) { /* Speicher nicht verfuegbar */ } }
+        function rlWasInstalled() { try { return localStorage.getItem("rlInstalled") === "1"; } catch (e) { return false; } }
+        if (standalone) rlMarkInstalled();
 
         // Am Computer: installierte App im 9:16-Fenster oeffnen
         var fitWindow = function () {
@@ -173,9 +231,129 @@
             window.moveTo((screen.availLeft || 0) + left, (screen.availTop || 0) + top);
           } catch (e) { /* Fenstergroesse nicht aenderbar, kein Problem */ }
         };
+        // Am Computer ist die installierte App entweder ein festes 9:16-Fenster oder Vollbild (F11) bzw. maximiert.
+        // Dazwischen gibt es nichts: Zieht jemand das Fenster in eine andere Form, springt es auf 9:16 zurueck.
+        var RL_RATIO = 9 / 16;
+        var rlRatioLocked = false;
+        var rlRatioTimer = 0;
+        var rlLastInner = { w: window.innerWidth, h: window.innerHeight };
+        // Wird gesetzt, wenn das Fenster sich nicht auf 9:16 zwingen lässt (z. B. weil es maximiert ist).
+        // So wird auch ein maximiertes Fenster erkannt, dessen Größe der Browser anders meldet als erwartet.
+        var rlSnapFailed = false;
+        var rlFailedInner = { w: 0, h: 0 };
+        function rlRatioOk() {
+          return Math.abs(window.innerWidth / window.innerHeight - RL_RATIO) < 0.02;
+        }
+        // Tablets: Das Fenster laesst sich nicht verkleinern, die App fuellt immer den Bildschirm. Breit ist sie,
+        // sobald die Seite breiter als das Spiel-Format ist (RL_TABLET_MAX, gleich --rl-max-aspect in style.css),
+        // dann entstehen sonst Balken links und rechts. Wie in fit() zaehlt eine eingeblendete Bildschirmtastatur
+        // nicht mit (sie verkleinert die Hoehe stark, das Seitenverhaeltnis wuerde sonst springen).
+        var RL_TABLET_MAX = 2 / 3;
+        var rlIsTablet = platform.mobile && Math.min(screen.width, screen.height) >= 600;
+        var rlTabBase = { w: 0, h: 0 };
+        function rlTabletWide() {
+          var w = window.innerWidth, h = window.innerHeight;
+          if (!rlTabBase.h || w !== rlTabBase.w || h >= rlTabBase.h * 0.75) rlTabBase = { w: w, h: h };
+          return rlTabBase.w / rlTabBase.h > RL_TABLET_MAX + 0.02;
+        }
+        function rlIsFullOrMaximized() {
+          if (rlIsTablet) return rlTabletWide();
+          return rlSnapFailed || rlDetectedFull();
+        }
+        function rlDetectedFull() {
+          if (document.fullscreenElement) return true;
+          if (window.matchMedia("(display-mode: fullscreen)").matches) return true; // F11 in der installierten App
+          // Vollbild ohne Fensterrahmen: Seite so groß wie der ganze Bildschirm
+          if (window.innerWidth >= screen.width - 2 && window.innerHeight >= screen.height - 2) return true;
+          var tol = 40; // Windows meldet maximierte Fenster mit kleinem Rand
+          return window.outerWidth >= (screen.availWidth || screen.width) - tol && window.outerHeight >= (screen.availHeight || screen.height) - tol;
+        }
+        // Zum Nachsehen in der Entwicklerkonsole (Strg+Umschalt+I): rentenLife.state()
+        window.rentenLife.state = function () {
+          return {
+            fullOrMaximized: rlIsFullOrMaximized(), confirmed: rlWideConfirmed, locked: rlRatioLocked,
+            standalone: window.rentenLife.standalone, mobile: platform.mobile, tablet: rlIsTablet,
+            displayFullscreen: window.matchMedia("(display-mode: fullscreen)").matches,
+            inner: [window.innerWidth, window.innerHeight], outer: [window.outerWidth, window.outerHeight],
+            avail: [screen.availWidth, screen.availHeight], screen: [screen.width, screen.height]
+          };
+        };
+        function rlEnforceRatio() {
+          if (rlIsTablet || !window.resizeTo) return; // am Tablet gibt es kein Fenster zum Anpassen
+          var w = window.innerWidth, h = window.innerHeight;
+          if (rlRatioOk()) { rlSnapFailed = false; rlLastInner = { w: w, h: h }; return; }
+          if (rlDetectedFull()) return;
+          // Hat sich die Fenstergröße seit dem letzten gescheiterten Versuch geändert, wird neu versucht
+          if (rlSnapFailed && (w !== rlFailedInner.w || h !== rlFailedInner.h)) rlSnapFailed = false;
+          if (rlSnapFailed) return;
+          // Die Seite, die der Nutzer stärker verändert hat, bleibt, die andere wird angepasst
+          var byWidth = Math.abs(w - rlLastInner.w) >= Math.abs(h - rlLastInner.h);
+          var chromeW = window.outerWidth - w, chromeH = window.outerHeight - h;
+          var nw = byWidth ? w : Math.round(h * RL_RATIO);
+          var nh = byWidth ? Math.round(w / RL_RATIO) : h;
+          var maxH = (screen.availHeight || screen.height) - chromeH;
+          if (nh > maxH) { nh = maxH; nw = Math.round(nh * RL_RATIO); }
+          try { window.resizeTo(nw + chromeW, nh + chromeH); } catch (e) { /* Fenstergroesse nicht aenderbar */ }
+          rlLastInner = { w: nw, h: nh };
+          // Gibt das Fenster nicht nach (maximiert), gilt es als Vollbild. Nur bei Querformat bzw. fast quadratisch,
+          // damit ein Fenster, das der Browser nicht schmaler machen kann, nicht fälschlich als Vollbild zählt.
+          setTimeout(function () {
+            if (rlRatioOk() || window.innerWidth / window.innerHeight < 0.9) return;
+            rlSnapFailed = true;
+            rlFailedInner = { w: window.innerWidth, h: window.innerHeight };
+            rlUpdateWide();
+          }, 400);
+        }
+        // Vollbild oder maximiert: erst Warnung (Spiel bleibt solange im 9:16-Streifen), nach Bestaetigung
+        // fuellt das Spiel den ganzen Bildschirm. Beim Verlassen beginnt es wieder von vorn.
+        var rlWideConfirmed = false;
+        function rlSetWide(on) {
+          var root = document.documentElement;
+          if (root.classList.contains("rl-wide") === on) return;
+          root.classList.toggle("rl-wide", on);
+          window.dispatchEvent(new Event("resize")); // damit Unity die neue Groesse uebernimmt
+        }
+        function rlUpdateWide() {
+          var overlay = document.getElementById("wide-overlay");
+          if (!rlIsFullOrMaximized()) {
+            rlWideConfirmed = false;
+            overlay.hidden = true;
+            rlSetWide(false);
+          } else if (rlWideConfirmed) {
+            overlay.hidden = true;
+            rlSetWide(true);
+          } else {
+            if (rlIsTablet) {
+              document.getElementById("wide-title").textContent = "Nicht fürs Tablet-Format gemacht";
+              document.getElementById("wide-text1").textContent = "RentenLife ist für Handys im Hochformat gemacht. Auf einem Tablet kann die Darstellung abweichen. Du kannst es trotzdem so spielen.";
+              document.getElementById("wide-text2").textContent = "Ohne Bestätigung bleibt das Spiel in einem schmalen Streifen in der Mitte.";
+              document.getElementById("wide-confirm").textContent = "Trotzdem im ganzen Bild spielen";
+            }
+            overlay.hidden = false;
+          }
+        }
+        function rlOnWindowChange() {
+          clearTimeout(rlRatioTimer);
+          rlRatioTimer = setTimeout(function () { rlEnforceRatio(); rlUpdateWide(); }, 200);
+        }
+        function rlLockRatio() {
+          if (rlRatioLocked) return;
+          rlRatioLocked = true;
+          window.addEventListener("resize", rlOnWindowChange);
+          window.addEventListener("orientationchange", rlOnWindowChange);
+          document.addEventListener("fullscreenchange", rlOnWindowChange);
+          document.getElementById("wide-confirm").addEventListener("click", function () {
+            rlWideConfirmed = true;
+            rlUpdateWide();
+          });
+          setTimeout(function () { rlEnforceRatio(); rlUpdateWide(); }, 600); // App startet evtl. schon maximiert
+        }
         if (standalone && !platform.mobile) {
           fitWindow();
           setTimeout(fitWindow, 300);
+          rlLockRatio();
+        } else if (standalone && rlIsTablet) {
+          rlLockRatio();
         }
 
         // Das Spiel wird erst geladen, wenn es erlaubt ist (installierte App oder bestaetigte Browser-Warnung)
@@ -221,6 +399,36 @@
           stepsEl.hidden = info.steps.length === 0;
         }
         rlRenderSteps();
+
+        // Am Computer: Ist die App schon installiert, steht ein Hinweis, das Spiel ueber die App zu oeffnen
+        var rlInstalledHintShown = false;
+        var rlIntroText = document.getElementById("install-intro").textContent;
+        function rlShowInstalledHint() {
+          if (rlInstalledHintShown || rlInstalledHandled) return;
+          rlInstalledHintShown = true;
+          document.getElementById("install-title").textContent = "RentenLife ist schon installiert";
+          document.getElementById("install-intro").textContent = "Öffne das Spiel über die App (Startmenü, Desktop oder Taskleiste) statt im Browser. Dort läuft es im passenden Fenster.";
+          stepsEl.hidden = true;
+          noteEl.hidden = true;
+          installBtn.hidden = true;
+        }
+        // Meldet der Browser, dass man installieren kann, war der Merker veraltet (App wurde deinstalliert)
+        function rlClearInstalledHint() {
+          if (!rlInstalledHintShown) return;
+          rlInstalledHintShown = false;
+          try { localStorage.removeItem("rlInstalled"); } catch (e) { /* ignorieren */ }
+          document.getElementById("install-title").textContent = "RentenLife installieren";
+          document.getElementById("install-intro").textContent = rlIntroText;
+          rlRenderSteps();
+        }
+        if (!platform.mobile) {
+          if (rlWasInstalled()) rlShowInstalledHint();
+          if (navigator.getInstalledRelatedApps) {
+            navigator.getInstalledRelatedApps().then(function (apps) {
+              if (apps && apps.length) rlShowInstalledHint();
+            }).catch(function () { /* Erkennung nicht moeglich */ });
+          }
+        }
         // Brave meldet sich im User-Agent wie Safari/Chrome, erkennbar nur ueber navigator.brave
         if (platform.mobile && navigator.brave && typeof navigator.brave.isBrave === "function") {
           navigator.brave.isBrave().then(function (isBrave) {
@@ -232,6 +440,7 @@
         window.addEventListener("beforeinstallprompt", function (e) {
           e.preventDefault();
           deferredPrompt = e;
+          rlClearInstalledHint();
           installBtn.hidden = false;
         });
         installBtn.addEventListener("click", function () {
@@ -255,9 +464,11 @@
           } else {
             // Computer: Der Browser oeffnet die App direkt, also sofort starten (9:16-Fenster, ohne Warnung)
             window.rentenLife.standalone = true;
+            rlMarkInstalled();
             overlay.hidden = true;
             fitWindow();
             setTimeout(fitWindow, 300);
+            rlLockRatio();
             rlAllow();
           }
         }
@@ -354,7 +565,10 @@
 
         companyName: "DefaultCompany",
         productName: "RentenLife",
-        productVersion: "2.3",
+        productVersion: "2.37",
+        // without this, files in Application.persistentDataPath (the save games) stay in memory only
+        // and are gone after reloading the page; true writes them to IndexedDB when the file is closed
+        autoSyncPersistentDataPath: true,
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
@@ -391,6 +605,29 @@
         requestAnimationFrame(function () { requestAnimationFrame(rlHideLoading); });
       };
 
+      // Zurueck-Taste von Android: Solange im Spiel ein "Zurueck"-Knopf sichtbar ist, liegt ein zusaetzlicher
+      // Verlaufseintrag bereit. Drueckt man Zurueck, verbraucht das diesen Eintrag und das Spiel klickt den Knopf.
+      // Ist keiner sichtbar (Startseite), gibt es keinen Eintrag, die Taste verlaesst wie gewohnt die App.
+      var rlUnity = null;
+      var rlBackArmed = false;
+      var rlBackIgnore = false;
+      window.rlSetBackAvailable = function (can) {
+        if (can && !rlBackArmed) {
+          try { history.pushState({ rlBack: 1 }, ""); rlBackArmed = true; } catch (e) {}
+        } else if (!can && rlBackArmed) {
+          rlBackArmed = false;
+          rlBackIgnore = true;
+          history.back();
+        }
+      };
+      window.addEventListener("popstate", function () {
+        if (rlBackIgnore) { rlBackIgnore = false; return; }
+        if (rlBackArmed) {
+          rlBackArmed = false;
+          if (rlUnity) rlUnity.SendMessage("BackHandler", "OnBrowserBack");
+        }
+      });
+
       // Das Spiel wird erst geladen, wenn rlStartGame() aufgerufen wird
       // (installierte App oder bestaetigte Browser-Warnung, siehe oben).
       var rlStarted = false;
@@ -413,9 +650,23 @@
             loadingPercent.textContent = "Starte …";
           }
         }).then((unityInstance) => {
+          rlUnity = unityInstance;
           // Falls das Spiel nie "bereit" meldet (oder das erste Bild sehr lange braucht), blendet der Timer den Ladebildschirm nach 12 s trotzdem aus
           setTimeout(rlHideLoading, 12000);
+          try { sessionStorage.removeItem("rlAutoReload"); } catch (e) {}
         }).catch((message) => {
+          // Kurze Lade- oder Netzfehler (zum Beispiel gleich nach einem Update, wenn die neuen Dateien noch nicht
+          // ueberall liegen): Einmal automatisch mit leerem Cache neu laden, statt eine Fehlermeldung zu zeigen.
+          var tried = false;
+          try { tried = sessionStorage.getItem("rlAutoReload") === "1"; } catch (e) {}
+          if (!tried) {
+            try { sessionStorage.setItem("rlAutoReload", "1"); } catch (e) {}
+            var reload = function () { location.reload(); };
+            if (window.caches && caches.keys) {
+              caches.keys().then(function (keys) { return Promise.all(keys.map(function (k) { return caches.delete(k); })); }).then(reload, reload);
+            } else { reload(); }
+            return;
+          }
           alert(message);
         });
       };
